@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 import genlayer as gl
 from genlayer.storage import TreeMap, allow as allow_storage
-from genlayer.types import Address, bigint, u16
+from genlayer.types import Address, bigint, u16, u256
 
 
 GEN = bigint(1000000000000000000)
@@ -129,6 +129,18 @@ class MandateMesh(gl.contract.Contract):
 
     def _registered(self, record: RoundRecord, caller: Address) -> bool:
         return _same(caller, record.proposer_a) or _same(caller, record.proposer_b) or _same(caller, record.proposer_c)
+
+    def _add_credit(self, round_id: str, owner: Address, amount: bigint) -> None:
+        if amount <= bigint(0):
+            return
+        key = self._credit_key(round_id, owner)
+        if key in self.credits:
+            item = self.credits[key]
+            item.amount += amount
+            item.withdrawn = False
+            self.credits[key] = item
+            return
+        self.credits[key] = CreditRecord(owner, amount, False)
 
     def _assert_sponsor(self, record: RoundRecord) -> None:
         if not _same(_sender(), record.sponsor):
@@ -284,7 +296,18 @@ class MandateMesh(gl.contract.Contract):
             return
         for proposal_id, mandate_id, coverage in cells:
             self.cells[proposal_id + "|" + mandate_id] = coverage
+        distributed = bigint(0)
+        for mandate_id in MANDATE_IDS:
+            winners = [proposal_id for proposal_id, row_mandate, coverage in cells
+                if row_mandate == mandate_id and coverage == "SUBSTANTIVE"]
+            if winners:
+                tranche = ROUND_PURSE // bigint(3)
+                share = tranche // bigint(len(winners))
+                for proposal_id in winners:
+                    self._add_credit(round_id, self.plans[proposal_id].owner, share)
+                    distributed += share
         record.phase = "ALLOCATED"
+        record.sponsor_credit = ROUND_PURSE - distributed
         self.rounds[round_id] = record
 
     @gl.public.write
@@ -303,3 +326,40 @@ class MandateMesh(gl.contract.Contract):
         record.phase = "EXPIRED_REFUNDED"
         self.rounds[round_id] = record
 
+    @gl.public.write
+    def withdraw_credit(self, round_id: str) -> None:
+        record = self._round(round_id)
+        if record.phase != "ALLOCATED":
+            raise gl.vm.UserError("round is not allocated")
+        caller = _sender()
+        key = self._credit_key(round_id, caller)
+        if key not in self.credits:
+            raise gl.vm.UserError("no credit exists for caller")
+        item = self.credits[key]
+        if item.withdrawn or item.amount <= bigint(0):
+            raise gl.vm.UserError("credit was already withdrawn")
+        amount = item.amount
+        if record.remaining_liability < amount:
+            raise gl.vm.UserError("liability is insufficient")
+        item.amount = bigint(0)
+        item.withdrawn = True
+        record.remaining_liability -= amount
+        self.credits[key] = item
+        self.rounds[round_id] = record
+        gl.chain.Account(Address(_address_text(caller))).emit_transfer(value=u256(amount))
+
+    @gl.public.write
+    def withdraw_sponsor_credit(self, round_id: str) -> None:
+        record = self._round(round_id)
+        self._assert_sponsor(record)
+        if record.phase not in ("ALLOCATED", "EXPIRED_REFUNDED"):
+            raise gl.vm.UserError("sponsor credit is unavailable")
+        if record.sponsor_credit <= bigint(0):
+            raise gl.vm.UserError("sponsor credit was already withdrawn")
+        amount = record.sponsor_credit
+        if record.remaining_liability < amount:
+            raise gl.vm.UserError("liability is insufficient")
+        record.sponsor_credit = bigint(0)
+        record.remaining_liability -= amount
+        self.rounds[round_id] = record
+        gl.chain.Account(Address(_address_text(record.sponsor))).emit_transfer(value=u256(amount))

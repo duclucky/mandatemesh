@@ -80,3 +80,35 @@ def test_expiry_recovery_is_sponsor_only_and_keeps_accounting_safe(direct_vm, di
     record = json.loads(contract.get_round("round-1"))
     assert record["phase"] == "EXPIRED_REFUNDED"
     assert record["remaining_liability"] == "0"
+
+
+def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):
+    contract = deploy_round(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie)
+    set_time(direct_vm, PROPOSAL_DEADLINE - 1)
+    direct_vm.sender = direct_bob
+    contract.submit_plan("round-1", "food access plan")
+    direct_vm.sender = direct_charlie
+    contract.submit_plan("round-1", "skills plan")
+    direct_vm.sender = direct_alice
+    set_time(direct_vm, PROPOSAL_DEADLINE)
+    contract.freeze_round("round-1")
+    bob_key = "round-1|" + direct_bob.as_hex.lower()
+    charlie_key = "round-1|" + direct_charlie.as_hex.lower()
+    payload = {"round_id": "round-1", "attempt_id": 1, "cells": [
+        {"proposal_id": bob_key, "mandate_id": "M1", "coverage": "SUBSTANTIVE"},
+        {"proposal_id": bob_key, "mandate_id": "M2", "coverage": "NONE"},
+        {"proposal_id": bob_key, "mandate_id": "M3", "coverage": "NONE"},
+        {"proposal_id": charlie_key, "mandate_id": "M1", "coverage": "NONE"},
+        {"proposal_id": charlie_key, "mandate_id": "M2", "coverage": "SUBSTANTIVE"},
+        {"proposal_id": charlie_key, "mandate_id": "M3", "coverage": "NONE"},
+    ]}
+    direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
+    direct_vm.sender = direct_alice
+    contract.adjudicate_round("round-1")
+    assert json.loads(contract.get_round("round-1"))["phase"] == "ALLOCATED"
+    assert json.loads(contract.get_credit("round-1", direct_bob))["amount"] == str((2 * GEN) // 3)
+    direct_vm.sender = direct_bob
+    contract.withdraw_credit("round-1")
+    assert json.loads(contract.get_credit("round-1", direct_bob))["withdrawn"] is True
+    with direct_vm.expect_revert("already withdrawn"):
+        contract.withdraw_credit("round-1")
