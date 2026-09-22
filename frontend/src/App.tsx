@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
 import { Timeline, useTransactionFlow, type TrackedStatus } from '@genlayer/transaction-kit-react';
+import type { SubmitInput } from '@genlayer/transaction-kit';
 import { Landmark, Menu, Wallet, X } from 'lucide-react';
 import { connectWallet, contractAddress, discoverWallets, readRound, type WalletChoice, useMandateKit } from './genlayer';
 
@@ -39,11 +40,11 @@ function localDateTime(hoursFromNow: number) {
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
 }
 
-type CreateRoundTransaction = { kind: 'write'; address: `0x${string}`; method: string; args: unknown[] };
+type WriteTransaction = Extract<SubmitInput, { kind: 'write' }>;
 type MandateKit = NonNullable<ReturnType<typeof useMandateKit>>;
 
-function AutoSignTransaction({ kit, tx, onDone }: { kit: MandateKit; tx: CreateRoundTransaction; onDone: (status: TrackedStatus) => void }) {
-  const flow = useTransactionFlow({ kit, tx, userValue: twoGen, trackUntil: 'finalized' });
+function AutoSignTransaction({ kit, tx, value = 0n, pendingMessage, doneMessage, onDone }: { kit: MandateKit; tx: WriteTransaction; value?: bigint; pendingMessage: string; doneMessage: string; onDone: (status: TrackedStatus) => void }) {
+  const flow = useTransactionFlow({ kit, tx, userValue: value, trackUntil: 'finalized' });
   const started = useRef(false);
   const completed = useRef(false);
 
@@ -65,9 +66,9 @@ function AutoSignTransaction({ kit, tx, onDone }: { kit: MandateKit; tx: CreateR
   };
 
   if (flow.state.step === 'estimating' || flow.state.step === 'review') return <p className="transaction-status" role="status">Opening secure wallet approval…</p>;
-  if (flow.state.step === 'signing') return <p className="transaction-status" role="status">Confirm the 2 GEN transaction in your wallet.</p>;
+  if (flow.state.step === 'signing') return <p className="transaction-status" role="status">{pendingMessage}</p>;
   if (flow.state.step === 'tracking') return <><Timeline status={flow.state.status} /><p className="transaction-status" role="status">Waiting for Studio Next finality…</p></>;
-  if (flow.state.step === 'done') return <><Timeline status={flow.state.status} /><p className={flow.state.status.successful === false ? 'error transaction-status' : 'success transaction-status'} role={flow.state.status.successful === false ? 'alert' : 'status'}>{flow.state.status.successful === false ? 'Transaction finalized without success.' : 'Round creation finalized.'}</p></>;
+  if (flow.state.step === 'done') return <><Timeline status={flow.state.status} /><p className={flow.state.status.successful === false ? 'error transaction-status' : 'success transaction-status'} role={flow.state.status.successful === false ? 'alert' : 'status'}>{flow.state.status.successful === false ? 'Transaction finalized without success.' : doneMessage}</p></>;
   return <><p className="error transaction-status" role="alert">The transaction could not be completed. You can retry without changing the round data.</p><button className="retry-button" type="button" onClick={retry}>Try again</button></>;
 }
 
@@ -86,7 +87,7 @@ function Start({ provider, account }: { provider: WalletChoice['provider'] | nul
   const valid = !!kit && !!contractAddress && /^[a-z0-9-]{1,48}$/.test(roundId) && people.every((value) => /^0x[a-fA-F0-9]{40}$/.test(value)) && deadlinesValid;
   const minDeadline = localDateTime(1 / 4);
   const deadlineError = !!proposalAt && !!recoveryAt && !deadlinesValid;
-  return <><h1>Start a transparent planning round</h1><p>Creation locks exactly 2 GEN. The fee review comes from Studio Dev live policy.</p>{!contractAddress && <p className="error" role="alert">Contract configuration is missing; writes are disabled.</p>}<form onSubmit={(event: FormEvent) => { event.preventDefault(); if (valid) setSubmitted(true); }}><label>Round ID<input required value={roundId} onChange={(event) => setRoundId(event.target.value)} pattern="[a-z0-9-]+" /></label>{people.map((value, index) => <label key={index}>Proposer {index + 1} address<input required value={value} onChange={(event) => setPeople(people.map((person, cursor) => cursor === index ? event.target.value : person))} /></label>)}<label>Proposal deadline<input required type="datetime-local" min={minDeadline} step={60} value={proposalAt} aria-invalid={deadlineError} onChange={(event) => setProposalAt(event.target.value)} /><small className="field-hint">Choose a future local date and time.</small></label><label>Recovery deadline<input required type="datetime-local" min={proposalAt || minDeadline} step={60} value={recoveryAt} aria-invalid={deadlineError} onChange={(event) => setRecoveryAt(event.target.value)} /><small className="field-hint">Must be later than the proposal deadline.</small></label>{deadlineError && <p className="error" role="alert">Choose valid future deadlines; recovery must be later than proposal.</p>}<p>Planning purse: <strong>2 GEN</strong></p><button className="button" disabled={!valid}>{kit ? 'Create round · 2 GEN' : 'Connect a wallet to create'}</button></form>{submitted && kit && contractAddress && <section className="transaction-review" aria-live="polite"><p className="dialog-kicker">Round funding</p><h2>Creating a 2 GEN round</h2><p>One click opens your wallet for approval. The round is created only after you sign and Studio Next finalizes it.</p><div className="auto-transaction-panel"><AutoSignTransaction kit={kit} tx={{ kind: 'write', address: contractAddress, method: 'create_round', args: [roundId, ...people, proposalTime, recoveryTime] }} onDone={() => readRound(roundId).catch(() => undefined)} /></div></section>}</>;
+  return <><h1>Start a transparent planning round</h1><p>Creation locks exactly 2 GEN. The fee review comes from Studio Dev live policy.</p>{!contractAddress && <p className="error" role="alert">Contract configuration is missing; writes are disabled.</p>}<form onSubmit={(event: FormEvent) => { event.preventDefault(); if (valid) setSubmitted(true); }}><label>Round ID<input required value={roundId} onChange={(event) => setRoundId(event.target.value)} pattern="[a-z0-9-]+" /></label>{people.map((value, index) => <label key={index}>Proposer {index + 1} address<input required value={value} onChange={(event) => setPeople(people.map((person, cursor) => cursor === index ? event.target.value : person))} /></label>)}<label>Proposal deadline<input required type="datetime-local" min={minDeadline} step={60} value={proposalAt} aria-invalid={deadlineError} onChange={(event) => setProposalAt(event.target.value)} /><small className="field-hint">Choose a future local date and time.</small></label><label>Recovery deadline<input required type="datetime-local" min={proposalAt || minDeadline} step={60} value={recoveryAt} aria-invalid={deadlineError} onChange={(event) => setRecoveryAt(event.target.value)} /><small className="field-hint">Must be later than the proposal deadline.</small></label>{deadlineError && <p className="error" role="alert">Choose valid future deadlines; recovery must be later than proposal.</p>}<p>Planning purse: <strong>2 GEN</strong></p><button className="button" disabled={!valid}>{kit ? 'Create round · 2 GEN' : 'Connect a wallet to create'}</button></form>{submitted && kit && contractAddress && <section className="transaction-review" aria-live="polite"><p className="dialog-kicker">Round funding</p><h2>Creating a 2 GEN round</h2><p>One click opens your wallet for approval. The round is created only after you sign and Studio Next finalizes it.</p><div className="auto-transaction-panel"><AutoSignTransaction kit={kit} tx={{ kind: 'write', address: contractAddress, method: 'create_round', args: [roundId, ...people, proposalTime, recoveryTime] }} value={twoGen} pendingMessage="Confirm the 2 GEN transaction in your wallet." doneMessage="Round creation finalized." onDone={() => readRound(roundId).catch(() => undefined)} /></div></section>}</>;
 }
 type CanonicalRound = {
   round_id: string;
@@ -128,14 +129,58 @@ function phaseLabel(phase: string) {
   } as Record<string, string>)[phase] ?? 'Unknown state';
 }
 
-function RoundLookup() {
+type LifecycleRequest = { title: string; description: string; doneMessage: string; tx: WriteTransaction };
+
+function LifecycleActions({ round, kit, onReload }: { round: CanonicalRound; kit: MandateKit | null; onReload: () => void }) {
+  const [planText, setPlanText] = useState('');
+  const [request, setRequest] = useState<LifecycleRequest | null>(null);
+  const now = Math.floor(Date.now() / 1000);
+  const proposalOpen = now < Number(round.proposal_deadline);
+  const recoveryOpen = now < Number(round.recovery_deadline);
+  const canWrite = !!kit && !!contractAddress;
+
+  const begin = (title: string, description: string, doneMessage: string, method: string, args: unknown[]) => {
+    if (!contractAddress) return;
+    setRequest({ title, description, doneMessage, tx: { kind: 'write', address: contractAddress, method, args } });
+  };
+
+  const actionCard = (title: string, description: string, label: string, method: string, args: unknown[], doneMessage: string, disabled = false) => <article className="lifecycle-action">
+    <h3>{title}</h3>
+    <p>{description}</p>
+    <button className="button" type="button" disabled={!canWrite || disabled} onClick={() => begin(title, description, doneMessage, method, args)}>{canWrite ? label : 'Connect wallet to continue'}</button>
+  </article>;
+
+  return <section className="lifecycle-actions" aria-label="Round actions">
+    <div className="lifecycle-heading"><div><p className="round-result-kicker">Next step</p><h2>Move this round forward</h2></div><p>Actions are checked by the contract against your role and the round clock.</p></div>
+    {round.phase === 'OPEN' && <>
+      {proposalOpen ? <form className="plan-form" onSubmit={(event) => { event.preventDefault(); if (planText.trim()) begin('Submit plan', 'Your registered proposer account submits one bounded plan for this round.', 'Plan submission finalized. Canonical state reloaded.', 'submit_plan', [round.round_id, planText.trim()]); }}>
+        <label>Planning proposal<textarea required maxLength={1200} value={planText} onChange={(event) => setPlanText(event.target.value)} placeholder="Describe how this plan covers the public mandates." /></label>
+        <p className="field-hint">Only a registered proposer can submit once, before the proposal deadline.</p>
+        <button className="button" disabled={!canWrite || !planText.trim()}>{canWrite ? 'Submit plan' : 'Connect wallet to submit'}</button>
+      </form> : <p className="lifecycle-notice">The proposal deadline has passed. The sponsor can now freeze the round.</p>}
+      {proposalOpen ? <p className="lifecycle-notice">Freeze becomes available to the sponsor after {formatDeadline(round.proposal_deadline)}.</p> : actionCard('Freeze round', 'Locks submissions so the planning coverage can be reviewed.', 'Freeze round', 'freeze_round', [round.round_id], 'Round frozen. Canonical state reloaded.')}
+    </>}
+    {(round.phase === 'FROZEN' || round.phase === 'RETRYABLE') && <>
+      {recoveryOpen ? actionCard('Review planning coverage', 'Runs validator consensus across the submitted plans and the three locked mandates.', 'Review round', 'adjudicate_round', [round.round_id], 'Review finalized. Canonical state reloaded.') : actionCard('Recover the remaining purse', 'After the recovery deadline, the sponsor can turn the remaining liability into sponsor credit.', 'Recover purse', 'recover_expired', [round.round_id], 'Recovery finalized. Canonical state reloaded.')}
+      {recoveryOpen && <p className="lifecycle-notice">Recovery becomes available to the sponsor after {formatDeadline(round.recovery_deadline)}.</p>}
+    </>}
+    {round.phase === 'ALLOCATED' && <div className="lifecycle-grid">
+      {actionCard('Withdraw plan credit', 'Withdraw your finalized allocation, if this connected account earned credit.', 'Withdraw my credit', 'withdraw_credit', [round.round_id], 'Plan credit withdrawal finalized. Canonical state reloaded.')}
+      {actionCard('Withdraw sponsor credit', 'Withdraw the finalized remainder credited to the round sponsor.', 'Withdraw sponsor credit', 'withdraw_sponsor_credit', [round.round_id], 'Sponsor credit withdrawal finalized. Canonical state reloaded.')}
+    </div>}
+    {round.phase === 'EXPIRED_REFUNDED' && actionCard('Withdraw sponsor credit', 'The expired round has converted its remaining purse into sponsor credit.', 'Withdraw sponsor credit', 'withdraw_sponsor_credit', [round.round_id], 'Sponsor credit withdrawal finalized. Canonical state reloaded.')}
+    {round.phase === 'REVIEWING' && <p className="lifecycle-notice">Validator consensus is in progress. Reload the canonical round after transaction finality.</p>}
+    {request && kit && <section className="transaction-review lifecycle-transaction" aria-live="polite"><p className="dialog-kicker">{request.title}</p><h2>{request.title}</h2><p>{request.description}</p><div className="auto-transaction-panel"><AutoSignTransaction key={`${request.tx.method}-${JSON.stringify(request.tx.args)}`} kit={kit} tx={request.tx} pendingMessage="Confirm this transaction in your wallet." doneMessage={request.doneMessage} onDone={() => onReload()} /></div></section>}
+  </section>;
+}
+
+function RoundLookup({ kit }: { kit: MandateKit | null }) {
   const [id, setId] = useState('');
   const [round, setRound] = useState<CanonicalRound | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const loadRound = async (event: FormEvent) => {
-    event.preventDefault();
+  const loadRound = async () => {
     setError('');
     setRound(null);
     setLoading(true);
@@ -149,7 +194,7 @@ function RoundLookup() {
   };
 
   return <>
-    <form onSubmit={loadRound}>
+    <form onSubmit={(event) => { event.preventDefault(); void loadRound(); }}>
       <label>Round ID<input required value={id} onChange={(event) => setId(event.target.value)} /></label>
       <button className="button" disabled={!contractAddress || loading}>{loading ? 'Loading canonical state…' : 'Load canonical state'}</button>
       {error && <p className="error" role="alert">{error}</p>}
@@ -174,10 +219,11 @@ function RoundLookup() {
       </div>
       <p className="round-footnote">Read directly from Studio Next canonical state after finality.</p>
     </section>}
+    {round && <LifecycleActions round={round} kit={kit} onReload={() => { void loadRound(); }} />}
   </>;
 }
-function Rounds() { return <><div className="title"><div><p>Rounds</p><h1>Read a canonical round</h1></div><Link className="button" to="/rounds/new">Start a round</Link></div><RoundLookup /></>; }
+function Rounds({ provider, account }: { provider: WalletChoice['provider'] | null; account: `0x${string}` | null }) { const kit = useMandateKit(provider, account); return <><div className="title"><div><p>Rounds</p><h1>Read a canonical round</h1></div><Link className="button" to="/rounds/new">Start a round</Link></div><RoundLookup kit={kit} /></>; }
 function History() { return <><h1>Past allocations stay explainable</h1><article className="empty"><h2>Read a round to inspect canonical history</h2><p>This app does not simulate balances, receipts, or finality.</p></article></>; }
 function Help() { return <><h1>What MandateMesh does — and does not do</h1><article className="card"><h2>What is decided?</h2><p>Validators assess proposal coverage of locked mandates, not whether a plan was completed or endorsed.</p><h2>When is GEN available?</h2><p>Only after finality and canonical state reload, never at wallet signature.</p></article></>; }
-function Shell() { const [modal, setModal] = useState(false); const [accountMenu, setAccountMenu] = useState(false); const [wallet, setWallet] = useState<WalletChoice | null>(null); const [account, setAccount] = useState<`0x${string}` | null>(null); const disconnect = () => { setAccount(null); setWallet(null); setAccountMenu(false); }; return <><a className="skip" href="#main">Skip to content</a><Header account={account} onWallet={() => setModal(true)} onAccount={() => setAccountMenu(!accountMenu)} />{accountMenu && account && <section className="account-menu" role="menu" aria-label="Wallet account"><p>{account}</p><button onClick={disconnect}>Disconnect wallet</button></section>}{modal && <WalletModal close={() => setModal(false)} connected={async (choice) => { setAccount(await connectWallet(choice.provider)); setWallet(choice); setModal(false); }} />}<main id="main"><Routes><Route path="/" element={<Home />} /><Route path="/rounds" element={<Rounds />} /><Route path="/rounds/new" element={<Start provider={wallet?.provider ?? null} account={account} />} /><Route path="/history" element={<History />} /><Route path="/help" element={<Help />} /></Routes></main></>; }
+function Shell() { const [modal, setModal] = useState(false); const [accountMenu, setAccountMenu] = useState(false); const [wallet, setWallet] = useState<WalletChoice | null>(null); const [account, setAccount] = useState<`0x${string}` | null>(null); const disconnect = () => { setAccount(null); setWallet(null); setAccountMenu(false); }; return <><a className="skip" href="#main">Skip to content</a><Header account={account} onWallet={() => setModal(true)} onAccount={() => setAccountMenu(!accountMenu)} />{accountMenu && account && <section className="account-menu" role="menu" aria-label="Wallet account"><p>{account}</p><button onClick={disconnect}>Disconnect wallet</button></section>}{modal && <WalletModal close={() => setModal(false)} connected={async (choice) => { setAccount(await connectWallet(choice.provider)); setWallet(choice); setModal(false); }} />}<main id="main"><Routes><Route path="/" element={<Home />} /><Route path="/rounds" element={<Rounds provider={wallet?.provider ?? null} account={account} />} /><Route path="/rounds/new" element={<Start provider={wallet?.provider ?? null} account={account} />} /><Route path="/history" element={<History />} /><Route path="/help" element={<Help />} /></Routes></main></>; }
 export default function App() { return <BrowserRouter><Shell /></BrowserRouter>; }

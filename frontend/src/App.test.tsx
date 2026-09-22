@@ -42,6 +42,8 @@ describe('MandateMesh product shell', () => {
     expect(await screen.findByRole('heading', { name: 'round-1' })).toBeInTheDocument();
     expect(screen.getByText('Open for proposals')).toBeInTheDocument();
     expect(screen.getByText('2 GEN')).toBeInTheDocument();
+    expect(screen.getByLabelText('Planning proposal')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect wallet to submit' })).toBeDisabled();
     await waitFor(() => expect(screen.queryByText(/"round_id"/)).not.toBeInTheDocument());
   });
 });
