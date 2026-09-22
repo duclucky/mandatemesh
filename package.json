@@ -1,0 +1,11 @@
+{
+  "name": "mandatemesh",
+  "private": true,
+  "scripts": {
+    "lint:contracts": "powershell -NoProfile -Command \"$env:PYTHONUTF8='1'; & .venv\\Scripts\\python.exe scripts\\genvm_lint_rc.py check contracts\\mandate_mesh.py\"",
+    "test:direct": ".venv\\Scripts\\python.exe -m pytest tests/direct -q",
+    "test:frontend": "npm --prefix frontend run test",
+    "build:frontend": "npm --prefix frontend run build",
+    "check": "npm run lint:contracts && npm run test:direct && npm run test:frontend && npm run build:frontend"
+  }
+}
