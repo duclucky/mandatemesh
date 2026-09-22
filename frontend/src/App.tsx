@@ -98,6 +98,7 @@ type CanonicalRound = {
   attempt_count: number;
   remaining_liability_gen: string;
   sponsor_credit_gen: string;
+  sponsor_credit_raw: string;
 };
 
 function parseCanonicalRound(value: unknown): CanonicalRound {
@@ -111,6 +112,7 @@ function parseCanonicalRound(value: unknown): CanonicalRound {
     attempt_count: Number(parsed.attempt_count ?? 0),
     remaining_liability_gen: `${Number(parsed.remaining_liability ?? 0) / 1e18} GEN`,
     sponsor_credit_gen: `${Number(parsed.sponsor_credit ?? 0) / 1e18} GEN`,
+    sponsor_credit_raw: String(parsed.sponsor_credit ?? '0'),
   };
 }
 
@@ -138,6 +140,7 @@ function LifecycleActions({ round, kit, onReload }: { round: CanonicalRound; kit
   const proposalOpen = now < Number(round.proposal_deadline);
   const recoveryOpen = now < Number(round.recovery_deadline);
   const canWrite = !!kit && !!contractAddress;
+  const sponsorCreditAvailable = /^\d+$/.test(round.sponsor_credit_raw) && BigInt(round.sponsor_credit_raw) > 0n;
 
   const begin = (title: string, description: string, doneMessage: string, method: string, args: unknown[]) => {
     if (!contractAddress) return;
@@ -168,7 +171,9 @@ function LifecycleActions({ round, kit, onReload }: { round: CanonicalRound; kit
       {actionCard('Withdraw plan credit', 'Withdraw your finalized allocation, if this connected account earned credit.', 'Withdraw my credit', 'withdraw_credit', [round.round_id], 'Plan credit withdrawal finalized. Canonical state reloaded.')}
       {actionCard('Withdraw sponsor credit', 'Withdraw the finalized remainder credited to the round sponsor.', 'Withdraw sponsor credit', 'withdraw_sponsor_credit', [round.round_id], 'Sponsor credit withdrawal finalized. Canonical state reloaded.')}
     </div>}
-    {round.phase === 'EXPIRED_REFUNDED' && actionCard('Withdraw sponsor credit', 'The expired round has converted its remaining purse into sponsor credit.', 'Withdraw sponsor credit', 'withdraw_sponsor_credit', [round.round_id], 'Sponsor credit withdrawal finalized. Canonical state reloaded.')}
+    {round.phase === 'EXPIRED_REFUNDED' && (sponsorCreditAvailable
+      ? actionCard('Withdraw sponsor credit', 'The expired round has converted its remaining purse into sponsor credit.', 'Withdraw sponsor credit', 'withdraw_sponsor_credit', [round.round_id], 'Sponsor credit withdrawal finalized. Canonical state reloaded.')
+      : <p className="lifecycle-notice">Sponsor credit has already been withdrawn.</p>)}
     {round.phase === 'REVIEWING' && <p className="lifecycle-notice">Validator consensus is in progress. Reload the canonical round after transaction finality.</p>}
     {request && kit && <section className="transaction-review lifecycle-transaction" aria-live="polite"><p className="dialog-kicker">{request.title}</p><h2>{request.title}</h2><p>{request.description}</p><div className="auto-transaction-panel"><AutoSignTransaction key={`${request.tx.method}-${JSON.stringify(request.tx.args)}`} kit={kit} tx={request.tx} pendingMessage="Confirm this transaction in your wallet." doneMessage={request.doneMessage} onDone={() => onReload()} /></div></section>}
   </section>;

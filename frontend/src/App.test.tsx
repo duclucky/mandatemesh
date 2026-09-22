@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { readRound } from './genlayer';
 
 vi.mock('./genlayer', () => ({
   contractAddress: '0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057',
@@ -61,5 +62,26 @@ describe('MandateMesh product shell', () => {
     expect(screen.getByLabelText('Planning proposal')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect wallet to submit' })).toBeDisabled();
     await waitFor(() => expect(screen.queryByText(/"round_id"/)).not.toBeInTheDocument());
+  });
+
+  it('does not offer a sponsor withdrawal after the credit has been withdrawn', async () => {
+    vi.mocked(readRound).mockResolvedValueOnce(JSON.stringify({
+      round_id: 'closed-round',
+      phase: 'EXPIRED_REFUNDED',
+      proposal_deadline: '1790153040',
+      recovery_deadline: '1790239440',
+      submitted_count: 0,
+      attempt_count: 0,
+      remaining_liability: '0',
+      sponsor_credit: '0',
+    }));
+    window.history.pushState({}, '', '/rounds');
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText('Round ID'), { target: { value: 'closed-round' } });
+    fireEvent.click(screen.getByRole('button', { name: /load canonical state/i }));
+
+    expect(await screen.findByText('Sponsor credit has already been withdrawn.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Withdraw sponsor credit' })).not.toBeInTheDocument();
   });
 });
