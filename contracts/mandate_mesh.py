@@ -188,7 +188,11 @@ class MandateMesh(gl.contract.Contract):
         now = _now()
         if bigint(proposal_deadline) <= now or bigint(recovery_deadline) <= bigint(proposal_deadline):
             raise gl.vm.UserError("invalid deadline order")
-        self.rounds[round_id] = RoundRecord(round_id, _sender(), proposer_a, proposer_b, proposer_c,
+        sponsor = Address(_address_text(_sender()))
+        proposer_a = Address(_address_text(proposer_a))
+        proposer_b = Address(_address_text(proposer_b))
+        proposer_c = Address(_address_text(proposer_c))
+        self.rounds[round_id] = RoundRecord(round_id, sponsor, proposer_a, proposer_b, proposer_c,
             bigint(proposal_deadline), bigint(recovery_deadline), "OPEN", u16(0), u16(0), ROUND_PURSE, bigint(0))
 
     @gl.public.write
@@ -199,7 +203,7 @@ class MandateMesh(gl.contract.Contract):
             raise gl.vm.UserError("round is not open")
         if now < bigint(0) or now >= record.proposal_deadline:
             raise gl.vm.UserError("proposal deadline has passed")
-        caller = _sender()
+        caller = Address(_address_text(_sender()))
         if not self._registered(record, caller):
             raise gl.vm.UserError("caller is not a registered proposer")
         key = self._plan_key(round_id, caller)
