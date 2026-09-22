@@ -88,7 +88,94 @@ function Start({ provider, account }: { provider: WalletChoice['provider'] | nul
   const deadlineError = !!proposalAt && !!recoveryAt && !deadlinesValid;
   return <><h1>Start a transparent planning round</h1><p>Creation locks exactly 2 GEN. The fee review comes from Studio Dev live policy.</p>{!contractAddress && <p className="error" role="alert">Contract configuration is missing; writes are disabled.</p>}<form onSubmit={(event: FormEvent) => { event.preventDefault(); if (valid) setSubmitted(true); }}><label>Round ID<input required value={roundId} onChange={(event) => setRoundId(event.target.value)} pattern="[a-z0-9-]+" /></label>{people.map((value, index) => <label key={index}>Proposer {index + 1} address<input required value={value} onChange={(event) => setPeople(people.map((person, cursor) => cursor === index ? event.target.value : person))} /></label>)}<label>Proposal deadline<input required type="datetime-local" min={minDeadline} step={60} value={proposalAt} aria-invalid={deadlineError} onChange={(event) => setProposalAt(event.target.value)} /><small className="field-hint">Choose a future local date and time.</small></label><label>Recovery deadline<input required type="datetime-local" min={proposalAt || minDeadline} step={60} value={recoveryAt} aria-invalid={deadlineError} onChange={(event) => setRecoveryAt(event.target.value)} /><small className="field-hint">Must be later than the proposal deadline.</small></label>{deadlineError && <p className="error" role="alert">Choose valid future deadlines; recovery must be later than proposal.</p>}<p>Planning purse: <strong>2 GEN</strong></p><button className="button" disabled={!valid}>{kit ? 'Create round · 2 GEN' : 'Connect a wallet to create'}</button></form>{submitted && kit && contractAddress && <section className="transaction-review" aria-live="polite"><p className="dialog-kicker">Round funding</p><h2>Creating a 2 GEN round</h2><p>One click opens your wallet for approval. The round is created only after you sign and Studio Next finalizes it.</p><div className="auto-transaction-panel"><AutoSignTransaction kit={kit} tx={{ kind: 'write', address: contractAddress, method: 'create_round', args: [roundId, ...people, proposalTime, recoveryTime] }} onDone={() => readRound(roundId).catch(() => undefined)} /></div></section>}</>;
 }
-function RoundLookup() { const [id, setId] = useState(''); const [result, setResult] = useState(''); const [error, setError] = useState(''); const display = (value: unknown) => { const parsed = JSON.parse(String(value)) as Record<string, unknown>; const formatted = { ...parsed, remaining_liability: undefined, sponsor_credit: undefined, remaining_liability_gen: `${Number(parsed.remaining_liability ?? 0) / 1e18} GEN`, sponsor_credit_gen: `${Number(parsed.sponsor_credit ?? 0) / 1e18} GEN` }; return JSON.stringify(formatted, (_key, item) => item === undefined ? undefined : item, 2); }; return <form onSubmit={(event) => { event.preventDefault(); setError(''); readRound(id).then((value) => setResult(display(value))).catch((cause) => setError(cause.message)); }}><label>Round ID<input required value={id} onChange={(event) => setId(event.target.value)} /></label><button className="button" disabled={!contractAddress}>Load canonical state</button>{error && <p className="error" role="alert">{error}</p>}{result && <pre aria-live="polite">{result}</pre>}</form>; }
+type CanonicalRound = {
+  round_id: string;
+  phase: string;
+  proposal_deadline: string;
+  recovery_deadline: string;
+  submitted_count: number;
+  attempt_count: number;
+  remaining_liability_gen: string;
+  sponsor_credit_gen: string;
+};
+
+function parseCanonicalRound(value: unknown): CanonicalRound {
+  const parsed = JSON.parse(String(value)) as Record<string, unknown>;
+  return {
+    round_id: String(parsed.round_id ?? ''),
+    phase: String(parsed.phase ?? 'UNKNOWN'),
+    proposal_deadline: String(parsed.proposal_deadline ?? ''),
+    recovery_deadline: String(parsed.recovery_deadline ?? ''),
+    submitted_count: Number(parsed.submitted_count ?? 0),
+    attempt_count: Number(parsed.attempt_count ?? 0),
+    remaining_liability_gen: `${Number(parsed.remaining_liability ?? 0) / 1e18} GEN`,
+    sponsor_credit_gen: `${Number(parsed.sponsor_credit ?? 0) / 1e18} GEN`,
+  };
+}
+
+function formatDeadline(timestamp: string) {
+  const date = new Date(Number(timestamp) * 1000);
+  return Number.isNaN(date.getTime()) ? 'Not available' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function phaseLabel(phase: string) {
+  return ({
+    OPEN: 'Open for proposals',
+    FROZEN: 'Ready for review',
+    RETRYABLE: 'Retryable review',
+    ALLOCATED: 'Allocated',
+    EXPIRED_REFUNDED: 'Refunded',
+  } as Record<string, string>)[phase] ?? 'Unknown state';
+}
+
+function RoundLookup() {
+  const [id, setId] = useState('');
+  const [round, setRound] = useState<CanonicalRound | null>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const loadRound = async (event: FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setRound(null);
+    setLoading(true);
+    try {
+      setRound(parseCanonicalRound(await readRound(id)));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The canonical round could not be loaded.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <>
+    <form onSubmit={loadRound}>
+      <label>Round ID<input required value={id} onChange={(event) => setId(event.target.value)} /></label>
+      <button className="button" disabled={!contractAddress || loading}>{loading ? 'Loading canonical state…' : 'Load canonical state'}</button>
+      {error && <p className="error" role="alert">{error}</p>}
+    </form>
+    {round && <section className="round-result" aria-live="polite" aria-label="Canonical round state">
+      <div className="round-result-heading">
+        <div>
+          <p className="round-result-kicker">Canonical round</p>
+          <h2>{round.round_id}</h2>
+        </div>
+        <span className={`round-phase round-phase-${round.phase.toLowerCase()}`}>{phaseLabel(round.phase)}</span>
+      </div>
+      <dl className="round-result-grid">
+        <div><dt>Proposal deadline</dt><dd>{formatDeadline(round.proposal_deadline)}</dd></div>
+        <div><dt>Recovery deadline</dt><dd>{formatDeadline(round.recovery_deadline)}</dd></div>
+        <div><dt>Plans submitted</dt><dd>{round.submitted_count}</dd></div>
+        <div><dt>Review attempts</dt><dd>{round.attempt_count}</dd></div>
+      </dl>
+      <div className="round-ledger">
+        <div><span>Remaining purse</span><strong>{round.remaining_liability_gen}</strong></div>
+        <div><span>Sponsor credit</span><strong>{round.sponsor_credit_gen}</strong></div>
+      </div>
+      <p className="round-footnote">Read directly from Studio Next canonical state after finality.</p>
+    </section>}
+  </>;
+}
 function Rounds() { return <><div className="title"><div><p>Rounds</p><h1>Read a canonical round</h1></div><Link className="button" to="/rounds/new">Start a round</Link></div><RoundLookup /></>; }
 function History() { return <><h1>Past allocations stay explainable</h1><article className="empty"><h2>Read a round to inspect canonical history</h2><p>This app does not simulate balances, receipts, or finality.</p></article></>; }
 function Help() { return <><h1>What MandateMesh does — and does not do</h1><article className="card"><h2>What is decided?</h2><p>Validators assess proposal coverage of locked mandates, not whether a plan was completed or endorsed.</p><h2>When is GEN available?</h2><p>Only after finality and canonical state reload, never at wallet signature.</p></article></>; }
