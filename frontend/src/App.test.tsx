@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
 vi.mock('./genlayer', () => ({
@@ -24,12 +24,28 @@ describe('MandateMesh product shell', () => {
     window.history.pushState({}, '', '/');
   });
 
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
   it('gives a visitor a value-first entry and an accessible route to start a round', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: /fund plans, not private decisions/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /start a round/i })).toHaveAttribute('href', '/rounds/new');
     expect(screen.getByRole('navigation', { name: /primary/i })).toBeInTheDocument();
+  });
+
+  it('defaults a new test round to a short, clearly ordered lifecycle window', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-22T08:00:00'));
+    window.history.pushState({}, '', '/rounds/new');
+    render(<App />);
+
+    const deadlines = document.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+    expect(deadlines[0]).toHaveValue('2026-09-22T08:05');
+    expect(deadlines[1]).toHaveValue('2026-09-22T08:10');
   });
 
   it('renders canonical round data as a human-readable card instead of raw JSON', async () => {
