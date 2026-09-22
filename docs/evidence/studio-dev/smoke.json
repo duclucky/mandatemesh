@@ -6,14 +6,26 @@
   "roundId": "smoke-13798f8",
   "createTransaction": "0x602219171604b88ff92a678f5ce967248356b58eac891e5d54af86f94b7453c2",
   "status": "FINISHED_WITH_RETURN",
-  "canonicalView": {
+  "recoveryTransactions": {
+    "freeze": "0x9b42da35667b78def929b649a8ad1abebe41521a95ce9ed6926b884eea5638f7",
+    "recover": "0x2292406a220a7364b3dffe72b849c6500263313f9a9777ddcc7b2db2b683cf89",
+    "withdrawSponsorCredit": "0xb6e791d177a6aefa46b55c1f56c4e602370d717755b7e3e0d5443fa312d8fb3f"
+  },
+  "initialCanonicalView": {
     "phase": "OPEN",
     "submittedCount": 0,
-    "remainingLiabilityGen": "2 GEN"
+    "remainingLiabilityGen": "2 GEN",
+    "sponsorCreditGen": "0 GEN"
+  },
+  "finalCanonicalView": {
+    "phase": "EXPIRED_REFUNDED",
+    "submittedCount": 0,
+    "remainingLiabilityGen": "0 GEN",
+    "sponsorCreditGen": "0 GEN"
   },
   "browserVerification": {
     "url": "https://mandatemesh.vercel.app/rounds?verify=gen-display",
-    "result": "canonical read succeeded; UI displayed remaining_liability_gen as 2 GEN",
+    "result": "canonical read succeeded; UI displays balances in GEN",
     "rpcFailureCheck": "no Failed to fetch/CORS error"
   }
 }

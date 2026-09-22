@@ -23,7 +23,7 @@ const ownerClient = createClient({ chain, account: accounts[0] });
 const readClient = createClient({ chain });
 
 async function write(functionName, args) {
-  const quote = await ownerClient.estimateTransactionFeesForWrite({ address: contractAddress, functionName, args });
+  const quote = await ownerClient.estimateTransactionFees();
   const hash = await ownerClient.writeContract({ address: contractAddress, functionName, args, fees: { distribution: quote.distribution, feeValue: quote.feeValue } });
   const receipt = await ownerClient.waitForTransactionReceipt({ hash, waitUntil: "decided", retries: 60, interval: 5000 });
   console.log(JSON.stringify({ roundId, action: functionName, hash, status: receipt.statusName, execution: receipt.txExecutionResultName, successful: isSuccessful(receipt) }));
