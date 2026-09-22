@@ -7,5 +7,9 @@
     "test:frontend": "npm --prefix frontend run test",
     "build:frontend": "npm --prefix frontend run build",
     "check": "npm run lint:contracts && npm run test:direct && npm run test:frontend && npm run build:frontend"
+  },
+  "devDependencies": {
+    "genlayer-js": "2.0.0-rc.1",
+    "viem": "2.38.6"
   }
 }

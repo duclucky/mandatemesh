@@ -1,0 +1,11 @@
+{
+  "network": "Studio Dev",
+  "rpc": "https://studio-next.genlayer.com/api",
+  "chainId": 61997,
+  "contractAddress": "0xfbc7F7A19Cd82E2b9d1B4BE0EbAD0c3be55fa5EB",
+  "deployTransaction": "0x17234715ab94252e42b0d3e032812fc5e46e44d9773db99df83ef42040389d98",
+  "status": "ACCEPTED",
+  "executionResult": "FINISHED_WITH_RETURN",
+  "feeDepositGen": "0.100000000000010352",
+  "sourceCommit": "pending-publication"
+}

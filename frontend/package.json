@@ -21,6 +21,9 @@
     "vitest": "^3.0.7"
   },
   "dependencies": {
+    "@genlayer/transaction-kit": "0.1.0-rc.2",
+    "@genlayer/transaction-kit-react": "0.1.0-rc.2",
+    "genlayer-js": "2.0.0-rc.1",
     "lucide-react": "^0.468.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
