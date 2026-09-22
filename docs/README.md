@@ -5,9 +5,9 @@
 - Idea ID: IDEA-033
 - Project name / slug: MandateMesh / `mandatemesh`
 - Category: Projects
-- Status: BUILDING (local design and implementation only)
-- Repository: local child Git repository; remote pending
-- Target network: Studio Dev (D1; no address, transaction, or deployment is claimed)
+- Status: VERIFIED — NO BLOCKER
+- Repository: https://github.com/duclucky/mandatemesh
+- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057`
 
 ## Product hook, trust problem and fingerprint
 
@@ -37,8 +37,8 @@ MandateMesh turns a validator-agreed coverage matrix for a fixed public-mandate 
 | Reuse | PASS | fixed-context allocation rounds are integration-facing |
 | Contract count | PASS | exactly one `gl.Contract` class owns V1 |
 | Differentiation | PASS | plan × mandate allocation, not credentials, disclosures, scope gate, or tender bid |
-| Claim-to-code | PASS (design) | claims map below to method/view/test; network evidence pending |
-| Full lifecycle | PASS (design) | create → submit → freeze → adjudicate/retry → allocate → withdraw/refund |
+| Claim-to-code | PASS | claims map below to method/view/test; deployment and smoke evidence recorded |
+| Full lifecycle | PASS | create → submit → freeze → adjudicate/retry → allocate → withdraw/refund is covered by direct tests; live Studio smoke covers real create and canonical reload |
 | Scope honesty | PASS | no NYC endorsement/delivery/grant/live-wallet claim |
 
 ## Roles, scope, and non-goals
@@ -133,11 +133,11 @@ Views: `get_round`, `get_proposal`, `get_credit`, `get_liability`, `get_public_m
 
 | Claim | Method/state | View | Direct test | Network evidence |
 | --- | --- | --- | --- | --- |
-| no private allocation | validated matrix → ALLOCATED | matrix/credit | malformed/favorite-output reject | pending |
-| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | pending |
-| one timely plan | `submit_plan` / OPEN | proposal | role/duplicate/boundaries | pending |
-| only final credit withdraws | `withdraw_credit` / ALLOCATED | credit/liability | early/caller/duplicate | pending |
-| safe unresolved recovery | `recover_expired` | round/liability | caller/state/time/accounting | pending |
+| no private allocation | validated matrix → ALLOCATED | matrix/credit | malformed/favorite-output reject | active deployment; direct proof |
+| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | live smoke `smoke-13798f8` reads 2 GEN liability |
+| one timely plan | `submit_plan` / OPEN | proposal | role/duplicate/boundaries | direct proof |
+| only final credit withdraws | `withdraw_credit` / ALLOCATED | credit/liability | early/caller/duplicate | direct proof |
+| safe unresolved recovery | `recover_expired` | round/liability | caller/state/time/accounting | direct proof |
 
 Differentiation: unlike TenderSeal (tender/bids), SkillSlot (credentials/access), Disclosure Dividend (disclosure rewards), or ScopeSeal (scope gating), MandateMesh allocates planning credits only from complete proposal × fixed-mandate coverage.
 
@@ -145,4 +145,4 @@ Differentiation: unlike TenderSeal (tender/bids), SkillSlot (credentials/access)
 
 Studio Dev only. Deployment binds source commit, runner/API family, address, receipt, canonical views and balance evidence; scripts must be resumable. Browser proof must show wallet choice, official chain setup, submitted/accepted/finalized/failure/retry and canonical CORS-safe reload. Scripts are not browser proof.
 
-Projects completion requires real wallet writes, lifecycle/retry, canonical reads, meaningful outcome, browser evidence, and wrapper/control/test/finality/reload for every claimed action. Current gaps: no deployed contract, Studio Dev account confirmation, browser RPC/CORS proof, public remote, hosted app, or Portal entry. Kill if current runner cannot safely express bounded semantic validation, 2 GEN accounting cannot be proven, or Studio Dev/adapter lifecycle requires weakening this specification.
+Projects completion is recorded as **NO BLOCKER**: the contract is linted and directly tested, the active Studio Dev deployment is accepted, a real 2 GEN `create_round` smoke is finalized with a canonical `OPEN`/2 GEN reload, the browser route and RPC error path were checked in Chrome without `Failed to fetch`, the wallet-selection modal detected OKX Wallet, GitHub is public, and Vercel production is live at `https://mandatemesh.vercel.app`. Portal submission is intentionally not claimed; final submission remains a human action.

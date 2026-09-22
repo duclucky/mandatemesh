@@ -1,0 +1,12 @@
+{
+  "network": "Studio Dev",
+  "contractAddress": "0xfbc7F7A19Cd82E2b9d1B4BE0EbAD0c3be55fa5EB",
+  "deployTransaction": "0x17234715ab94252e42b0d3e032812fc5e46e44d9773db99df83ef42040389d98",
+  "status": "ABANDONED",
+  "reason": "Studio Next v0.6 write smoke exposed an Address storage boundary incompatibility; no further value is sent to this revision.",
+  "replacement": "0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057",
+  "failedSmokeAttempts": [
+    "0xd44bacb6e222b15933de714f4d6d85dba9f4677410f65a9371129850b2661f3e",
+    "0xb7615a78f28656fdb06abe1534248387566f3c242b03fec63293bf0c427b8804"
+  ]
+}
