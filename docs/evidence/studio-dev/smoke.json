@@ -1,0 +1,19 @@
+{
+  "network": "Studio Dev",
+  "rpc": "https://studio-next.genlayer.com/api",
+  "chainId": 61997,
+  "contractAddress": "0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057",
+  "roundId": "smoke-13798f8",
+  "createTransaction": "0x602219171604b88ff92a678f5ce967248356b58eac891e5d54af86f94b7453c2",
+  "status": "FINISHED_WITH_RETURN",
+  "canonicalView": {
+    "phase": "OPEN",
+    "submittedCount": 0,
+    "remainingLiabilityGen": "2 GEN"
+  },
+  "browserVerification": {
+    "url": "https://mandatemesh.vercel.app/rounds?verify=gen-display",
+    "result": "canonical read succeeded; UI displayed remaining_liability_gen as 2 GEN",
+    "rpcFailureCheck": "no Failed to fetch/CORS error"
+  }
+}
