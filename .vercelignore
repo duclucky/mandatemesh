@@ -1,0 +1,15 @@
+.git
+.venv
+.genvm-direct-cache
+.pytest_cache
+artifacts
+node_modules
+frontend/node_modules
+tests
+contracts
+scripts
+docs
+*.pyc
+__pycache__
+.env
+frontend/.env
