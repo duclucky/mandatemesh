@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
-import { GenLayerTransactionPanel } from '@genlayer/transaction-kit-react';
+import { Timeline, useTransactionFlow, type TrackedStatus } from '@genlayer/transaction-kit-react';
 import { Landmark, Menu, Wallet, X } from 'lucide-react';
 import { connectWallet, contractAddress, discoverWallets, readRound, type WalletChoice, useMandateKit } from './genlayer';
 
@@ -39,6 +39,38 @@ function localDateTime(hoursFromNow: number) {
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
 }
 
+type CreateRoundTransaction = { kind: 'write'; address: `0x${string}`; method: string; args: unknown[] };
+type MandateKit = NonNullable<ReturnType<typeof useMandateKit>>;
+
+function AutoSignTransaction({ kit, tx, onDone }: { kit: MandateKit; tx: CreateRoundTransaction; onDone: (status: TrackedStatus) => void }) {
+  const flow = useTransactionFlow({ kit, tx, userValue: twoGen, trackUntil: 'finalized' });
+  const started = useRef(false);
+  const completed = useRef(false);
+
+  useEffect(() => {
+    if (flow.state.step === 'review' && !started.current) {
+      started.current = true;
+      void flow.approve();
+    }
+    if (flow.state.step === 'done' && !completed.current) {
+      completed.current = true;
+      onDone(flow.state.status);
+    }
+  }, [flow.state.step, flow.approve, onDone]);
+
+  const retry = () => {
+    started.current = false;
+    completed.current = false;
+    flow.reset();
+  };
+
+  if (flow.state.step === 'estimating' || flow.state.step === 'review') return <p className="transaction-status" role="status">Opening secure wallet approval…</p>;
+  if (flow.state.step === 'signing') return <p className="transaction-status" role="status">Confirm the 2 GEN transaction in your wallet.</p>;
+  if (flow.state.step === 'tracking') return <><Timeline status={flow.state.status} /><p className="transaction-status" role="status">Waiting for Studio Next finality…</p></>;
+  if (flow.state.step === 'done') return <><Timeline status={flow.state.status} /><p className={flow.state.status.successful === false ? 'error transaction-status' : 'success transaction-status'} role={flow.state.status.successful === false ? 'alert' : 'status'}>{flow.state.status.successful === false ? 'Transaction finalized without success.' : 'Round creation finalized.'}</p></>;
+  return <><p className="error transaction-status" role="alert">The transaction could not be completed. You can retry without changing the round data.</p><button className="retry-button" type="button" onClick={retry}>Try again</button></>;
+}
+
 function Start({ provider, account }: { provider: WalletChoice['provider'] | null; account: `0x${string}` | null }) {
   const kit = useMandateKit(provider, account);
   const [roundId, setRoundId] = useState('');
@@ -54,7 +86,7 @@ function Start({ provider, account }: { provider: WalletChoice['provider'] | nul
   const valid = !!kit && !!contractAddress && /^[a-z0-9-]{1,48}$/.test(roundId) && people.every((value) => /^0x[a-fA-F0-9]{40}$/.test(value)) && deadlinesValid;
   const minDeadline = localDateTime(1 / 4);
   const deadlineError = !!proposalAt && !!recoveryAt && !deadlinesValid;
-  return <><h1>Start a transparent planning round</h1><p>Creation locks exactly 2 GEN. The fee review comes from Studio Dev live policy.</p>{!contractAddress && <p className="error" role="alert">Contract configuration is missing; writes are disabled.</p>}<form onSubmit={(event: FormEvent) => { event.preventDefault(); if (valid) setSubmitted(true); }}><label>Round ID<input required value={roundId} onChange={(event) => setRoundId(event.target.value)} pattern="[a-z0-9-]+" /></label>{people.map((value, index) => <label key={index}>Proposer {index + 1} address<input required value={value} onChange={(event) => setPeople(people.map((person, cursor) => cursor === index ? event.target.value : person))} /></label>)}<label>Proposal deadline<input required type="datetime-local" min={minDeadline} step={60} value={proposalAt} aria-invalid={deadlineError} onChange={(event) => setProposalAt(event.target.value)} /><small className="field-hint">Choose a future local date and time.</small></label><label>Recovery deadline<input required type="datetime-local" min={proposalAt || minDeadline} step={60} value={recoveryAt} aria-invalid={deadlineError} onChange={(event) => setRecoveryAt(event.target.value)} /><small className="field-hint">Must be later than the proposal deadline.</small></label>{deadlineError && <p className="error" role="alert">Choose valid future deadlines; recovery must be later than proposal.</p>}<p>Planning purse: <strong>2 GEN</strong></p><button className="button" disabled={!valid}>{kit ? 'Review fee and create round' : 'Connect a wallet to create'}</button></form>{submitted && kit && contractAddress && <section className="transaction-review" aria-live="polite"><p className="dialog-kicker">Round funding</p><h2>Confirm 2 GEN round funding</h2><p>2 GEN will be locked in this round. Your wallet will show the final network approval, and any unused fee budget is refunded after finalization.</p><div className="user-transaction-panel"><GenLayerTransactionPanel kit={kit} tx={{ kind: 'write', address: contractAddress, method: 'create_round', args: [roundId, ...people, proposalTime, recoveryTime] }} userValue={twoGen} network="Studio Dev" trackUntil="finalized" onDone={() => readRound(roundId).catch(() => undefined)} /></div></section>}</>;
+  return <><h1>Start a transparent planning round</h1><p>Creation locks exactly 2 GEN. The fee review comes from Studio Dev live policy.</p>{!contractAddress && <p className="error" role="alert">Contract configuration is missing; writes are disabled.</p>}<form onSubmit={(event: FormEvent) => { event.preventDefault(); if (valid) setSubmitted(true); }}><label>Round ID<input required value={roundId} onChange={(event) => setRoundId(event.target.value)} pattern="[a-z0-9-]+" /></label>{people.map((value, index) => <label key={index}>Proposer {index + 1} address<input required value={value} onChange={(event) => setPeople(people.map((person, cursor) => cursor === index ? event.target.value : person))} /></label>)}<label>Proposal deadline<input required type="datetime-local" min={minDeadline} step={60} value={proposalAt} aria-invalid={deadlineError} onChange={(event) => setProposalAt(event.target.value)} /><small className="field-hint">Choose a future local date and time.</small></label><label>Recovery deadline<input required type="datetime-local" min={proposalAt || minDeadline} step={60} value={recoveryAt} aria-invalid={deadlineError} onChange={(event) => setRecoveryAt(event.target.value)} /><small className="field-hint">Must be later than the proposal deadline.</small></label>{deadlineError && <p className="error" role="alert">Choose valid future deadlines; recovery must be later than proposal.</p>}<p>Planning purse: <strong>2 GEN</strong></p><button className="button" disabled={!valid}>{kit ? 'Create round · 2 GEN' : 'Connect a wallet to create'}</button></form>{submitted && kit && contractAddress && <section className="transaction-review" aria-live="polite"><p className="dialog-kicker">Round funding</p><h2>Creating a 2 GEN round</h2><p>One click opens your wallet for approval. The round is created only after you sign and Studio Next finalizes it.</p><div className="auto-transaction-panel"><AutoSignTransaction kit={kit} tx={{ kind: 'write', address: contractAddress, method: 'create_round', args: [roundId, ...people, proposalTime, recoveryTime] }} onDone={() => readRound(roundId).catch(() => undefined)} /></div></section>}</>;
 }
 function RoundLookup() { const [id, setId] = useState(''); const [result, setResult] = useState(''); const [error, setError] = useState(''); const display = (value: unknown) => { const parsed = JSON.parse(String(value)) as Record<string, unknown>; const formatted = { ...parsed, remaining_liability: undefined, sponsor_credit: undefined, remaining_liability_gen: `${Number(parsed.remaining_liability ?? 0) / 1e18} GEN`, sponsor_credit_gen: `${Number(parsed.sponsor_credit ?? 0) / 1e18} GEN` }; return JSON.stringify(formatted, (_key, item) => item === undefined ? undefined : item, 2); }; return <form onSubmit={(event) => { event.preventDefault(); setError(''); readRound(id).then((value) => setResult(display(value))).catch((cause) => setError(cause.message)); }}><label>Round ID<input required value={id} onChange={(event) => setId(event.target.value)} /></label><button className="button" disabled={!contractAddress}>Load canonical state</button>{error && <p className="error" role="alert">{error}</p>}{result && <pre aria-live="polite">{result}</pre>}</form>; }
 function Rounds() { return <><div className="title"><div><p>Rounds</p><h1>Read a canonical round</h1></div><Link className="button" to="/rounds/new">Start a round</Link></div><RoundLookup /></>; }
