@@ -79,7 +79,12 @@ def test_expiry_recovery_is_sponsor_only_and_keeps_accounting_safe(direct_vm, di
     contract.recover_expired("round-1")
     record = json.loads(contract.get_round("round-1"))
     assert record["phase"] == "EXPIRED_REFUNDED"
+    assert record["remaining_liability"] == str(2 * GEN)
+    assert record["sponsor_credit"] == str(2 * GEN)
+    contract.withdraw_sponsor_credit("round-1")
+    record = json.loads(contract.get_round("round-1"))
     assert record["remaining_liability"] == "0"
+    assert record["sponsor_credit"] == "0"
 
 
 def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):

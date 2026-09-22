@@ -321,8 +321,7 @@ class MandateMesh(gl.contract.Contract):
         amount = record.remaining_liability
         if amount <= bigint(0):
             raise gl.vm.UserError("no liability remains")
-        record.remaining_liability = bigint(0)
-        record.sponsor_credit += amount
+        record.sponsor_credit = amount
         record.phase = "EXPIRED_REFUNDED"
         self.rounds[round_id] = record
 
