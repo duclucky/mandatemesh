@@ -22,6 +22,14 @@ const accounts = keys.slice(0, 3).map(({ key }) => createAccount(key));
 const ownerClient = createClient({ chain, account: accounts[0] });
 const readClient = createClient({ chain });
 
+async function write(functionName, args) {
+  const quote = await ownerClient.estimateTransactionFeesForWrite({ address: contractAddress, functionName, args });
+  const hash = await ownerClient.writeContract({ address: contractAddress, functionName, args, fees: { distribution: quote.distribution, feeValue: quote.feeValue } });
+  const receipt = await ownerClient.waitForTransactionReceipt({ hash, waitUntil: "decided", retries: 60, interval: 5000 });
+  console.log(JSON.stringify({ roundId, action: functionName, hash, status: receipt.statusName, execution: receipt.txExecutionResultName, successful: isSuccessful(receipt) }));
+  if (!isSuccessful(receipt)) throw new Error(`${functionName} was not successful`);
+}
+
 let existing;
 try {
   existing = await readClient.readContract({ address: contractAddress, functionName: "get_round", args: [roundId] });
@@ -47,4 +55,18 @@ if (!existing) {
 }
 
 const state = JSON.parse(String(await readClient.readContract({ address: contractAddress, functionName: "get_round", args: [roundId] })));
-console.log(JSON.stringify({ roundId, canonicalView: { phase: state.phase, submittedCount: state.submitted_count, remainingLiabilityGen: Number(state.remaining_liability) / 1e18 } }));
+if (process.argv.includes("--recover")) {
+  if (state.phase === "OPEN" && Number(state.proposal_deadline) <= Math.floor(Date.now() / 1000)) {
+    await write("freeze_round", [roundId]);
+  }
+  const beforeRecovery = JSON.parse(String(await readClient.readContract({ address: contractAddress, functionName: "get_round", args: [roundId] })));
+  if (["FROZEN", "RETRYABLE"].includes(beforeRecovery.phase) && Number(beforeRecovery.recovery_deadline) <= Math.floor(Date.now() / 1000)) {
+    await write("recover_expired", [roundId]);
+  }
+  const afterRecovery = JSON.parse(String(await readClient.readContract({ address: contractAddress, functionName: "get_round", args: [roundId] })));
+  if (afterRecovery.phase === "EXPIRED_REFUNDED" && Number(afterRecovery.sponsor_credit) > 0) {
+    await write("withdraw_sponsor_credit", [roundId]);
+  }
+}
+const finalState = JSON.parse(String(await readClient.readContract({ address: contractAddress, functionName: "get_round", args: [roundId] })));
+console.log(JSON.stringify({ roundId, canonicalView: { phase: finalState.phase, submittedCount: finalState.submitted_count, remainingLiabilityGen: Number(finalState.remaining_liability) / 1e18, sponsorCreditGen: Number(finalState.sponsor_credit) / 1e18 } }));
