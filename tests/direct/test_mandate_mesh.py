@@ -1,6 +1,9 @@
+import ast
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
@@ -9,6 +12,12 @@ GEN = 10**18
 BASE_TIME = 1_893_456_000
 PROPOSAL_DEADLINE = BASE_TIME + 100
 RECOVERY_DEADLINE = BASE_TIME + 200
+EXPECTED_CONFIG_DIGEST = "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633"
+EXPECTED_MANDATE_TEXTS = [
+    "Job Training for Young Adults and Adults in Trade Work: The program will provide vocational training to people 18 years old and up. They will learn how to be independent contractors and get commercial and city contracts. At the end of the program job fairs will make solid connections.",
+    "Healthy Meals Partnership: Restaurants will partner with local food pantries to provide healthy meals. Families will pick up the food at monthly healthy food workshops focused on health issues. Services will be multilingual.",
+    "Bridging the Skills Gaps: Job Training for High Schoolers: Prepare HS students with career readiness programs that include workshops led by professionals. Activities may include resume-building, mock interviews, and networking to connect students with opportunities.",
+]
 
 
 def set_time(vm, timestamp):
@@ -28,6 +37,35 @@ def deploy_round(direct_vm, direct_deploy, direct_alice, direct_bob, direct_char
     direct_vm.value = 2 * GEN
     contract.create_round("round-1", direct_bob, direct_charlie, direct_alice, PROPOSAL_DEADLINE, RECOVERY_DEADLINE)
     return contract
+
+
+def prepare_review(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):
+    contract = deploy_round(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie)
+    set_time(direct_vm, PROPOSAL_DEADLINE - 1)
+    direct_vm.sender = direct_bob
+    contract.submit_plan("round-1", "food access plan")
+    direct_vm.sender = direct_charlie
+    contract.submit_plan("round-1", "skills plan")
+    direct_vm.sender = direct_alice
+    set_time(direct_vm, PROPOSAL_DEADLINE)
+    contract.freeze_round("round-1")
+    bob_key = "round-1|" + direct_bob.as_hex.lower()
+    charlie_key = "round-1|" + direct_charlie.as_hex.lower()
+    return contract, bob_key, charlie_key
+
+
+def complete_payload(bob_key, charlie_key, config_digest=EXPECTED_CONFIG_DIGEST):
+    payload = {"round_id": "round-1", "config_digest": config_digest, "attempt_id": 1, "cells": [
+        {"proposal_id": bob_key, "mandate_id": "M1", "coverage": "SUBSTANTIVE"},
+        {"proposal_id": bob_key, "mandate_id": "M2", "coverage": "NONE"},
+        {"proposal_id": bob_key, "mandate_id": "M3", "coverage": "NONE"},
+        {"proposal_id": charlie_key, "mandate_id": "M1", "coverage": "NONE"},
+        {"proposal_id": charlie_key, "mandate_id": "M2", "coverage": "SUBSTANTIVE"},
+        {"proposal_id": charlie_key, "mandate_id": "M3", "coverage": "NONE"},
+    ]}
+    if config_digest is None:
+        del payload["config_digest"]
+    return payload
 
 
 def test_round_requires_exactly_two_gen(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):
@@ -88,25 +126,10 @@ def test_expiry_recovery_is_sponsor_only_and_keeps_accounting_safe(direct_vm, di
 
 
 def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):
-    contract = deploy_round(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie)
-    set_time(direct_vm, PROPOSAL_DEADLINE - 1)
-    direct_vm.sender = direct_bob
-    contract.submit_plan("round-1", "food access plan")
-    direct_vm.sender = direct_charlie
-    contract.submit_plan("round-1", "skills plan")
-    direct_vm.sender = direct_alice
-    set_time(direct_vm, PROPOSAL_DEADLINE)
-    contract.freeze_round("round-1")
-    bob_key = "round-1|" + direct_bob.as_hex.lower()
-    charlie_key = "round-1|" + direct_charlie.as_hex.lower()
-    payload = {"round_id": "round-1", "attempt_id": 1, "cells": [
-        {"proposal_id": bob_key, "mandate_id": "M1", "coverage": "SUBSTANTIVE"},
-        {"proposal_id": bob_key, "mandate_id": "M2", "coverage": "NONE"},
-        {"proposal_id": bob_key, "mandate_id": "M3", "coverage": "NONE"},
-        {"proposal_id": charlie_key, "mandate_id": "M1", "coverage": "NONE"},
-        {"proposal_id": charlie_key, "mandate_id": "M2", "coverage": "SUBSTANTIVE"},
-        {"proposal_id": charlie_key, "mandate_id": "M3", "coverage": "NONE"},
-    ]}
+    contract, bob_key, charlie_key = prepare_review(
+        direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
+    )
+    payload = complete_payload(bob_key, charlie_key)
     direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
     direct_vm.sender = direct_alice
     contract.adjudicate_round("round-1")
@@ -117,3 +140,79 @@ def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(direct_vm
     assert json.loads(contract.get_credit("round-1", direct_bob))["withdrawn"] is True
     with direct_vm.expect_revert("already withdrawn"):
         contract.withdraw_credit("round-1")
+
+
+def test_mandate_configuration_exposes_exact_text_digests_and_criteria(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/mandate_mesh.py")
+
+    config = json.loads(contract.get_mandate_config())
+
+    assert config["config_digest"] == EXPECTED_CONFIG_DIGEST
+    assert [item["id"] for item in config["mandates"]] == ["M1", "M2", "M3"]
+    assert [item["text"] for item in config["mandates"]] == EXPECTED_MANDATE_TEXTS
+    assert all(item["digest"] == hashlib.sha256(item["text"].encode()).hexdigest()
+        for item in config["mandates"])
+    assert set(config["criteria"]) == {"SUBSTANTIVE", "PARTIAL", "NONE"}
+
+    prompt = contract._build_review_prompt("round-1", 1, [{"proposal_id": "p1", "text": "plan"}], config)
+    assert EXPECTED_CONFIG_DIGEST in prompt
+    assert all(text in prompt for text in EXPECTED_MANDATE_TEXTS)
+    assert all(config["criteria"][label] in prompt for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
+
+
+def test_validator_replays_the_same_bound_review_prompt():
+    tree = ast.parse(Path("contracts/mandate_mesh.py").read_text(encoding="ascii"))
+    adjudicate = next(node for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "adjudicate_round")
+    validator = next(node for node in adjudicate.body
+        if isinstance(node, ast.FunctionDef) and node.name == "validator_fn")
+    leader_calls = [node for node in ast.walk(validator)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "leader_fn"]
+    prompt_builds = [node for node in ast.walk(adjudicate)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "_build_review_prompt"]
+
+    assert len(prompt_builds) == 1
+    assert len(leader_calls) == 1
+
+
+@pytest.mark.parametrize("config_digest", [None, "0" * 64])
+def test_missing_or_changed_result_config_cannot_create_payout_credits(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, config_digest
+):
+    contract, bob_key, charlie_key = prepare_review(
+        direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
+    )
+    payload = complete_payload(bob_key, charlie_key, config_digest)
+    direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
+
+    contract.adjudicate_round("round-1")
+
+    round_view = json.loads(contract.get_round("round-1"))
+    assert round_view["phase"] == "RETRYABLE"
+    assert round_view["remaining_liability"] == str(2 * GEN)
+    assert json.loads(contract.get_credit("round-1", direct_bob))["amount"] == "0"
+    assert json.loads(contract.get_credit("round-1", direct_charlie))["amount"] == "0"
+
+
+@pytest.mark.parametrize("mutation", ["changed", "missing"])
+def test_changed_or_missing_stored_mandate_cannot_create_payout_credits(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, mutation
+):
+    contract, bob_key, charlie_key = prepare_review(
+        direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
+    )
+    if mutation == "changed":
+        contract.mandate_texts["M1"] = "tampered mandate"
+    else:
+        del contract.mandate_texts["M1"]
+    payload = complete_payload(bob_key, charlie_key)
+    direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
+
+    contract.adjudicate_round("round-1")
+
+    round_view = json.loads(contract.get_round("round-1"))
+    assert round_view["phase"] == "RETRYABLE"
+    assert round_view["remaining_liability"] == str(2 * GEN)
+    assert json.loads(contract.get_credit("round-1", direct_bob))["amount"] == "0"
+    assert json.loads(contract.get_credit("round-1", direct_charlie))["amount"] == "0"

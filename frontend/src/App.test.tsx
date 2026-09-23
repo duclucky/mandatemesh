@@ -10,8 +10,8 @@ vi.mock('./genlayer', () => ({
   readRound: vi.fn().mockResolvedValue(JSON.stringify({
     round_id: 'round-1',
     phase: 'OPEN',
-    proposal_deadline: '1790153040',
-    recovery_deadline: '1790239440',
+    proposal_deadline: String(Math.floor(Date.now() / 1000) + 3600),
+    recovery_deadline: String(Math.floor(Date.now() / 1000) + 7200),
     submitted_count: 1,
     attempt_count: 0,
     remaining_liability: '2000000000000000000',
