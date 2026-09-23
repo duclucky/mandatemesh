@@ -7,7 +7,7 @@
 - Category: Projects
 - Status: VERIFIED — NO BLOCKER
 - Repository: https://github.com/duclucky/mandatemesh
-- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057`
+- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0x99538358a68b298E2a08B61888A9E97F45475073`
 
 ## Product hook, trust problem and fingerprint
 
@@ -136,7 +136,7 @@ Views: `get_round`, `get_proposal`, `get_credit`, `get_liability`, `get_public_m
 | Claim | Method/state | View | Direct test | Network evidence |
 | --- | --- | --- | --- | --- |
 | no private allocation | validated matrix → ALLOCATED | matrix/credit | malformed/favorite-output reject | active deployment; direct proof |
-| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | live smoke `smoke-13798f8` reads 2 GEN liability |
+| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | superseded v0.3 smoke `smoke-13798f8`; v0.4 config deployment verified separately |
 | one timely plan | `submit_plan` / OPEN | proposal | role/duplicate/boundaries | direct proof |
 | only final credit withdraws | `withdraw_credit` / ALLOCATED | credit/liability | early/caller/duplicate | direct proof |
 | safe unresolved recovery | `recover_expired` | round/liability | caller/state/time/accounting | direct proof |
@@ -147,4 +147,4 @@ Differentiation: unlike TenderSeal (tender/bids), SkillSlot (credentials/access)
 
 Studio Dev only. Deployment binds source commit, runner/API family, address, receipt, canonical views and balance evidence; scripts must be resumable. Browser proof must show wallet choice, official chain setup, submitted/accepted/finalized/failure/retry and canonical CORS-safe reload. Scripts are not browser proof.
 
-Projects completion is recorded as **NO BLOCKER**: the contract is linted and directly tested, the active Studio Dev deployment is accepted, a real 2 GEN `create_round` smoke is finalized with a canonical `OPEN`/2 GEN reload, the browser route and RPC error path were checked in Chrome without `Failed to fetch`, the wallet-selection modal detected OKX Wallet, GitHub is public, and Vercel production is live at `https://mandatemesh.vercel.app`. Portal submission is intentionally not claimed; final submission remains a human action.
+Projects completion is recorded as **NO BLOCKER**: the contract is linted and directly tested, the active v0.4 Studio Dev deployment is accepted and its canonical mandate configuration view is verified, the superseded v0.3 revision retains a finalized real 2 GEN lifecycle with zero liability, the browser route and RPC error path were checked in Chrome without `Failed to fetch`, the wallet-selection modal detected OKX Wallet, GitHub is public, and Vercel production is live at `https://mandatemesh.vercel.app`. Portal submission is intentionally not claimed; final submission remains a human action.

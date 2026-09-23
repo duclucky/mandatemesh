@@ -1,0 +1,15 @@
+{
+  "network": "Studio Dev",
+  "rpc": "https://studio-next.genlayer.com/api",
+  "chainId": 61997,
+  "contractAddress": "0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057",
+  "deployTransaction": "0x5a23f523abaaad5106c1a5be4709838a8afcc81a213cc8976d886d827dbf21e1",
+  "status": "ACCEPTED",
+  "executionResult": "FINISHED_WITH_RETURN",
+  "feeDepositGen": "0.100000000000010352",
+  "sourceCommit": "c6859237d72a8bbb24dbed15bfcfb33b8b7d43ed",
+  "revisionStatus": "SUPERSEDED",
+  "supersededReason": "Reviewer remediation binds exact mandate text, per-mandate digests, aggregate configuration digest, and explicit coverage criteria to adjudication.",
+  "replacement": "0x99538358a68b298E2a08B61888A9E97F45475073",
+  "remainingLiabilityGen": "0 GEN"
+}

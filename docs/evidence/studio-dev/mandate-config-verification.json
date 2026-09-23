@@ -1,0 +1,15 @@
+{
+  "network": "Studio Dev",
+  "rpc": "https://studio-next.genlayer.com/api",
+  "chainId": 61997,
+  "contractAddress": "0x99538358a68b298E2a08B61888A9E97F45475073",
+  "method": "get_mandate_config",
+  "valid": true,
+  "configDigest": "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633",
+  "mandates": [
+    {"id": "M1", "digest": "ec25f3ee320455b439754ff4cb0d1b947aa1902db741d46e248fb5854dc33f2e"},
+    {"id": "M2", "digest": "ac4a954991de772c356eb14be6838fcafd27c06c66dcc18a6b8861c117f42da9"},
+    {"id": "M3", "digest": "bb80dbf2fb35e5f5b4361adae0caa84a398c6265760b8896bfb32433eb15ff73"}
+  ],
+  "criteria": ["NONE", "PARTIAL", "SUBSTANTIVE"]
+}

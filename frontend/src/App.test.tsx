@@ -4,7 +4,7 @@ import App from './App';
 import { readRound } from './genlayer';
 
 vi.mock('./genlayer', () => ({
-  contractAddress: '0xD267BF7A3d45F7cfbB321D9dCe6A05e6B8173057',
+  contractAddress: '0x99538358a68b298E2a08B61888A9E97F45475073',
   connectWallet: vi.fn(),
   discoverWallets: vi.fn().mockResolvedValue([]),
   readRound: vi.fn().mockResolvedValue(JSON.stringify({
