@@ -206,6 +206,15 @@ def test_validator_criteria_bind_exact_config_and_all_criteria(direct_deploy):
     assert "SUBSTANTIVE" in criteria and "Reject an omitted" in criteria
 
 
+def test_consensus_json_decoder_handles_fenced_and_nested_output(direct_deploy):
+    contract = direct_deploy("contracts/mandate_mesh.py")
+    payload = {"cells": [{"proposal_id": "p1", "mandate_id": "M1", "coverage": "NONE"}]}
+
+    assert contract._decode_json_object("```json\n" + json.dumps(payload) + "\n```") == payload
+    assert contract._decode_json_object(json.dumps(json.dumps(payload))) == payload
+    assert contract._decode_json_object("not-json") == {}
+
+
 @pytest.mark.parametrize("mutation", ["missing_cell", "invalid_label"])
 def test_malformed_matrix_cannot_create_payout_credits(
     direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, mutation, monkeypatch
