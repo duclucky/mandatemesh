@@ -20,6 +20,17 @@ EXPECTED_MANDATE_TEXTS = [
 ]
 
 
+def enable_direct_non_comparative_adapter(monkeypatch):
+    """Direct mode lacks ExecPromptTemplate; Studio smoke covers the real primitive."""
+    gl = sys.modules["genlayer"]
+
+    def execute_review(review_input, *, task, criteria):
+        del task, criteria
+        return gl.nondet.exec_prompt(review_input(), response_format="json")
+
+    monkeypatch.setattr(gl.eq_principle, "prompt_non_comparative", execute_review)
+
+
 def set_time(vm, timestamp):
     text = datetime.fromtimestamp(timestamp, timezone.utc).isoformat().replace("+00:00", "Z")
     vm.warp(text)
@@ -125,11 +136,14 @@ def test_expiry_recovery_is_sponsor_only_and_keeps_accounting_safe(direct_vm, di
     assert record["sponsor_credit"] == "0"
 
 
-def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie):
+def test_complete_matrix_creates_credit_and_prevents_double_withdrawal(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, monkeypatch
+):
     contract, bob_key, charlie_key = prepare_review(
         direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
     )
     payload = complete_payload(bob_key, charlie_key)
+    enable_direct_non_comparative_adapter(monkeypatch)
     direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
     direct_vm.sender = direct_alice
     contract.adjudicate_round("round-1")
@@ -164,49 +178,43 @@ def test_validator_audits_with_the_same_bound_mandates_and_criteria():
     tree = ast.parse(Path("contracts/mandate_mesh.py").read_text(encoding="ascii"))
     adjudicate = next(node for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "adjudicate_round")
-    validator = next(node for node in adjudicate.body
-        if isinstance(node, ast.FunctionDef) and node.name == "validator_fn")
-    leader_calls = [node for node in ast.walk(validator)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "leader_fn"]
     review_prompt_builds = [node for node in ast.walk(adjudicate)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
         and node.func.attr == "_build_review_prompt"]
-    validator_prompt_builds = [node for node in ast.walk(validator)
+    validator_criteria_builds = [node for node in ast.walk(adjudicate)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "_build_validator_prompt"]
-    validator_llm_calls = [node for node in ast.walk(validator)
+        and node.func.attr == "_build_validator_criteria"]
+    non_comparative_calls = [node for node in ast.walk(adjudicate)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "exec_prompt"]
+        and node.func.attr == "prompt_non_comparative"]
 
     assert len(review_prompt_builds) == 1
-    assert len(validator_prompt_builds) == 1
-    assert len(validator_llm_calls) == 1
-    assert len(leader_calls) == 0
+    assert len(validator_criteria_builds) == 1
+    assert len(non_comparative_calls) == 1
 
 
-def test_validator_prompt_binds_exact_config_and_all_criteria(direct_deploy):
+def test_validator_criteria_bind_exact_config_and_all_criteria(direct_deploy):
     contract = direct_deploy("contracts/mandate_mesh.py")
     config = json.loads(contract.get_mandate_config())
-    cells = [{"proposal_id": "p1", "mandate_id": "M1", "coverage": "SUBSTANTIVE"}]
-
-    prompt = contract._build_validator_prompt(
-        "round-1", 1, [{"proposal_id": "p1", "text": "plan", "digest": "d"}], config, cells
+    criteria = contract._build_validator_criteria(
+        "round-1", 1, [{"proposal_id": "p1", "text": "plan", "digest": "d"}], config
     )
 
-    assert EXPECTED_CONFIG_DIGEST in prompt
-    assert all(text in prompt for text in EXPECTED_MANDATE_TEXTS)
-    assert all(config["criteria"][label] in prompt for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
-    assert "SUBSTANTIVE" in prompt and '{"valid": true}' in prompt
+    assert EXPECTED_CONFIG_DIGEST in criteria
+    assert all(text in criteria for text in EXPECTED_MANDATE_TEXTS)
+    assert all(config["criteria"][label] in criteria for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
+    assert "SUBSTANTIVE" in criteria and "Reject an omitted" in criteria
 
 
 @pytest.mark.parametrize("config_digest", [None, "0" * 64])
 def test_missing_or_changed_result_config_cannot_create_payout_credits(
-    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, config_digest
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, config_digest, monkeypatch
 ):
     contract, bob_key, charlie_key = prepare_review(
         direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
     )
     payload = complete_payload(bob_key, charlie_key, config_digest)
+    enable_direct_non_comparative_adapter(monkeypatch)
     direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
 
     contract.adjudicate_round("round-1")
