@@ -160,7 +160,7 @@ def test_mandate_configuration_exposes_exact_text_digests_and_criteria(direct_vm
     assert all(config["criteria"][label] in prompt for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
 
 
-def test_validator_replays_the_same_bound_review_prompt():
+def test_validator_audits_with_the_same_bound_mandates_and_criteria():
     tree = ast.parse(Path("contracts/mandate_mesh.py").read_text(encoding="ascii"))
     adjudicate = next(node for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "adjudicate_round")
@@ -168,12 +168,35 @@ def test_validator_replays_the_same_bound_review_prompt():
         if isinstance(node, ast.FunctionDef) and node.name == "validator_fn")
     leader_calls = [node for node in ast.walk(validator)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "leader_fn"]
-    prompt_builds = [node for node in ast.walk(adjudicate)
+    review_prompt_builds = [node for node in ast.walk(adjudicate)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
         and node.func.attr == "_build_review_prompt"]
+    validator_prompt_builds = [node for node in ast.walk(validator)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "_build_validator_prompt"]
+    validator_llm_calls = [node for node in ast.walk(validator)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "exec_prompt"]
 
-    assert len(prompt_builds) == 1
-    assert len(leader_calls) == 1
+    assert len(review_prompt_builds) == 1
+    assert len(validator_prompt_builds) == 1
+    assert len(validator_llm_calls) == 1
+    assert len(leader_calls) == 0
+
+
+def test_validator_prompt_binds_exact_config_and_all_criteria(direct_deploy):
+    contract = direct_deploy("contracts/mandate_mesh.py")
+    config = json.loads(contract.get_mandate_config())
+    cells = [{"proposal_id": "p1", "mandate_id": "M1", "coverage": "SUBSTANTIVE"}]
+
+    prompt = contract._build_validator_prompt(
+        "round-1", 1, [{"proposal_id": "p1", "text": "plan", "digest": "d"}], config, cells
+    )
+
+    assert EXPECTED_CONFIG_DIGEST in prompt
+    assert all(text in prompt for text in EXPECTED_MANDATE_TEXTS)
+    assert all(config["criteria"][label] in prompt for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
+    assert "SUBSTANTIVE" in prompt and '"valid"' in prompt
 
 
 @pytest.mark.parametrize("config_digest", [None, "0" * 64])
