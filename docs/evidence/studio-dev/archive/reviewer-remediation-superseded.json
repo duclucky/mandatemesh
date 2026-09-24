@@ -1,0 +1,46 @@
+{
+  "network": "Studio Dev",
+  "reason": "Superseded during bounded reviewer-remediation validation; no further value may be sent to these revisions.",
+  "revisions": [
+    {
+      "contractAddress": "0x445449E361Cd4542d87966d5DB504955d6Fe735D",
+      "contractVersion": "0.4.1",
+      "roundId": "review-v041-20260924",
+      "status": "ABANDONED",
+      "reason": "adjudication ended UNDETERMINED / MAJORITY_DISAGREE",
+      "adjudicationTransaction": "0x82662b03fb7bce71219f3ffa311b00186af2aa60d3946b6720327692a536556b",
+      "remainingLiabilityGen": "2 GEN"
+    },
+    {
+      "contractAddress": "0x898D347565F5113086d86b4fF9219dD525cC9ffe",
+      "contractVersion": "0.4.2",
+      "roundId": "review-v042-20260924",
+      "status": "ABANDONED",
+      "reason": "adjudication ended UNDETERMINED / MAJORITY_DISAGREE",
+      "adjudicationTransaction": "0x7421c1642e8eadbc6a9844488f0647911b9f212ad79634acfdab6aa5517b1c7d",
+      "remainingLiabilityGen": "2 GEN"
+    },
+    {
+      "contractAddress": "0x01E0E783335F8Bcc04b90c277E75DEC8C4C92bDd",
+      "contractVersion": "0.4.3",
+      "status": "ABANDONED",
+      "reason": "three-proposal adjudication was undetermined; single-proposal consensus returned RETRYABLE without credits",
+      "roundIds": ["review-v043-20260924", "review-v043-single-20260924"],
+      "adjudicationTransactions": [
+        "0xfa7f0245391e08a36a3906b4431c1a875c871125d62622420001aed322ce4d21",
+        "0x8f44ac21098fbca2d0fc6a9f4ac79bed5a7bb46d7f6b566269ced3c45b88f62d",
+        "0x8718377ac2a9b421a29e1b43ec324946ce3214e05c200d417a36d4c85eace7d0"
+      ],
+      "remainingLiabilityGen": "4 GEN"
+    },
+    {
+      "contractAddress": "0xB12565562A2de79C0CaD63c5BcA477c5158aAa36",
+      "contractVersion": "0.4.4",
+      "roundId": "review-v044-single-20260924",
+      "status": "ABANDONED",
+      "reason": "consensus agreed but execution rejected non-canonical JSON wrapper before mutation",
+      "adjudicationTransaction": "0xf5470039ef28bb2f8c144a4d6ae35fad46cb615c2f39907b4829f84601361a75",
+      "remainingLiabilityGen": "2 GEN"
+    }
+  ]
+}

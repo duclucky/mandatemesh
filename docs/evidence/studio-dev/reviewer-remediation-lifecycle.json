@@ -1,0 +1,30 @@
+{
+  "network": "Studio Dev",
+  "rpc": "https://studio-next.genlayer.com/api",
+  "chainId": 61997,
+  "contractAddress": "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249",
+  "contractVersion": "0.4.5",
+  "roundId": "review-v045-single-20260924",
+  "configDigest": "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633",
+  "transactions": {
+    "createRound": "0x0ab32697f0eb7d81a3c8f8a3ef59fdbdde4970aad71dee576cb39478d37ceea8",
+    "submitPlan": "0xa5f428b67012cf557724febe8aaa9c59a4e8c8fa5cc10758030628f3f26ceee7",
+    "freezeRound": "0x4c47c49f93c4658a6f180f6e35af7e36fe6de2949d8e7255f9ed15473f04559b",
+    "adjudicateRound": "0x4a51883cc940dd9543e1f0aea498b22d5d9c006ecdf3c63fb4326ae6f1e7e929",
+    "withdrawProposerCredit": "0x2c3cddcb4711eafea2b7ad826a2c725a2f00dbb98bba8ea7581144bdaed98735",
+    "withdrawSponsorCredit": "0x40bd338cb8e14af341ca63f851ef201f6d7d4b8c3441c756315715811598f1d9"
+  },
+  "finalState": {
+    "phase": "ALLOCATED",
+    "submittedCount": 1,
+    "attemptCount": 1,
+    "remainingLiabilityGen": "0 GEN",
+    "sponsorCreditGen": "0 GEN",
+    "proposerCreditWithdrawn": true
+  },
+  "matrix": [
+    {"mandateId": "M1", "coverage": "NONE"},
+    {"mandateId": "M2", "coverage": "SUBSTANTIVE"},
+    {"mandateId": "M3", "coverage": "NONE"}
+  ]
+}

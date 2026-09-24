@@ -7,7 +7,7 @@
 - Category: Projects
 - Status: VERIFIED — NO BLOCKER
 - Repository: https://github.com/duclucky/mandatemesh
-- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0x99538358a68b298E2a08B61888A9E97F45475073`
+- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249`
 
 ## Product hook, trust problem and fingerprint
 
@@ -38,7 +38,7 @@ MandateMesh turns a validator-agreed coverage matrix for a fixed public-mandate 
 | Contract count | PASS | exactly one `gl.Contract` class owns V1 |
 | Differentiation | PASS | plan × mandate allocation, not credentials, disclosures, scope gate, or tender bid |
 | Claim-to-code | PASS | claims map below to method/view/test; deployment and smoke evidence recorded |
-| Full lifecycle | PASS | create → submit → freeze → adjudicate/retry → allocate → withdraw/refund is covered by direct tests; live Studio smoke covers real create and canonical reload |
+| Full lifecycle | PASS | direct tests cover create → submit → freeze → adjudicate/retry → allocate → withdraw/refund; Studio Dev round `review-v045-single-20260924` completed create → submit → freeze → accepted adjudication → both withdrawals with zero remaining liability |
 | Scope honesty | PASS | no NYC endorsement/delivery/grant/live-wallet claim |
 
 ## Roles, scope, and non-goals

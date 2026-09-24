@@ -2,13 +2,13 @@
   "network": "Studio Dev",
   "rpc": "https://studio-next.genlayer.com/api",
   "chainId": 61997,
-  "contractAddress": "0x99538358a68b298E2a08B61888A9E97F45475073",
-  "deployTransaction": "0x4015e2d6ae3b4d7393aaea5bb63591d980aea61ba3ae32d95d3af6b3fd139538",
+  "contractAddress": "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249",
+  "deployTransaction": "0x0912ff9138a87b65087ca2dbf7febe8ca6faf19df96928154fff9f650ce195a1",
   "status": "ACCEPTED",
   "executionResult": "FINISHED_WITH_RETURN",
   "feeDepositGen": "0.10000000000001036",
-  "sourceCommit": "cf0c10115d7c4a4f61feae45a15f5cd5beb882f2",
-  "contractVersion": "0.4.0",
+  "sourceCommit": "fcf3036",
+  "contractVersion": "0.4.5",
   "runner": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng",
   "configDigest": "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633"
 }
