@@ -1,4 +1,4 @@
-# v0.4.5
+# v0.4.6
 # { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 import hashlib
 import json
@@ -127,6 +127,15 @@ def _bounded_ascii(value: str, label: str, maximum: int) -> str:
 
 def _digest(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+@gl.evm.contract_interface
+class _ExternalRecipient:
+    class View:
+        pass
+
+    class Write:
+        pass
 
 
 class MandateMesh(gl.contract.Contract):
@@ -465,7 +474,7 @@ class MandateMesh(gl.contract.Contract):
         record.remaining_liability -= amount
         self.credits[key] = item
         self.rounds[round_id] = record
-        gl.chain.Account(Address(_address_text(caller))).emit_transfer(value=u256(amount))
+        _ExternalRecipient(Address(_address_text(caller))).emit_transfer(value=u256(amount))
 
     @gl.public.write
     def withdraw_sponsor_credit(self, round_id: str) -> None:
@@ -481,4 +490,4 @@ class MandateMesh(gl.contract.Contract):
         record.sponsor_credit = bigint(0)
         record.remaining_liability -= amount
         self.rounds[round_id] = record
-        gl.chain.Account(Address(_address_text(record.sponsor))).emit_transfer(value=u256(amount))
+        _ExternalRecipient(Address(_address_text(record.sponsor))).emit_transfer(value=u256(amount))

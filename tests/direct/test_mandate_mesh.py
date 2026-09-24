@@ -215,6 +215,15 @@ def test_consensus_json_decoder_handles_fenced_and_nested_output(direct_deploy):
     assert contract._decode_json_object("not-json") == {}
 
 
+def test_withdrawals_use_external_evm_transfer_for_eoa_recipients():
+    source = Path("contracts/mandate_mesh.py").read_text(encoding="ascii")
+
+    assert "@gl.evm.contract_interface" in source
+    assert "_ExternalRecipient(Address(" in source
+    assert ").emit_transfer(value=u256(amount))" in source
+    assert "gl.chain.Account(" not in source
+
+
 @pytest.mark.parametrize("mutation", ["missing_cell", "invalid_label"])
 def test_malformed_matrix_cannot_create_payout_credits(
     direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, mutation, monkeypatch
