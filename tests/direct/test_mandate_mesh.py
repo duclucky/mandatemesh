@@ -206,14 +206,18 @@ def test_validator_criteria_bind_exact_config_and_all_criteria(direct_deploy):
     assert "SUBSTANTIVE" in criteria and "Reject an omitted" in criteria
 
 
-@pytest.mark.parametrize("config_digest", [None, "0" * 64])
-def test_missing_or_changed_result_config_cannot_create_payout_credits(
-    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, config_digest, monkeypatch
+@pytest.mark.parametrize("mutation", ["missing_cell", "invalid_label"])
+def test_malformed_matrix_cannot_create_payout_credits(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie, mutation, monkeypatch
 ):
     contract, bob_key, charlie_key = prepare_review(
         direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
     )
-    payload = complete_payload(bob_key, charlie_key, config_digest)
+    payload = complete_payload(bob_key, charlie_key)
+    if mutation == "missing_cell":
+        payload["cells"].pop()
+    else:
+        payload["cells"][0]["coverage"] = "INVALID"
     enable_direct_non_comparative_adapter(monkeypatch)
     direct_vm.mock_llm(r"(?s).*Return JSON only.*", json.dumps(json.dumps(payload)))
 
