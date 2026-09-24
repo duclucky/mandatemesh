@@ -2,17 +2,19 @@
   "network": "Studio Dev",
   "rpc": "https://studio-next.genlayer.com/api",
   "chainId": 61997,
-  "contractAddress": "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249",
-  "contractVersion": "0.4.5",
-  "roundId": "review-v045-single-20260924",
+  "contractAddress": "0x6bF7a01031d3371aB23Adb76e3c907F968C7458A",
+  "contractVersion": "0.4.6",
+  "roundId": "review-v046-single-20260924",
   "configDigest": "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633",
   "transactions": {
-    "createRound": "0x0ab32697f0eb7d81a3c8f8a3ef59fdbdde4970aad71dee576cb39478d37ceea8",
-    "submitPlan": "0xa5f428b67012cf557724febe8aaa9c59a4e8c8fa5cc10758030628f3f26ceee7",
-    "freezeRound": "0x4c47c49f93c4658a6f180f6e35af7e36fe6de2949d8e7255f9ed15473f04559b",
-    "adjudicateRound": "0x4a51883cc940dd9543e1f0aea498b22d5d9c006ecdf3c63fb4326ae6f1e7e929",
-    "withdrawProposerCredit": "0x2c3cddcb4711eafea2b7ad826a2c725a2f00dbb98bba8ea7581144bdaed98735",
-    "withdrawSponsorCredit": "0x40bd338cb8e14af341ca63f851ef201f6d7d4b8c3441c756315715811598f1d9"
+    "createRound": "0x4cde9842b618a7151e05a0014df4ea4d886b84a7b75b39a225d4f37b0c24c4ee",
+    "submitPlan": "0xc3afecc0e19089d4d3f6ad580db83b49ddd27ed56a4326c7d02415b4ca3f96ac",
+    "freezeRound": "0xad0242f3f10a6776a08e53ab9803dc3840e61ff51aaaa79f81fbf92d5a6027e7",
+    "adjudicateRound": "0x621950b357209389c2f7c3d35fa91c184f1d117530fa2ca3318d4d8d81a57040",
+    "withdrawProposerCredit": "0x87297b9db251ffefa382c461954153f1ec597098ae064ed61dcfc79a6afb0c99",
+    "withdrawSponsorCredit": "0x74dc493fca74e0f3f212b994394e76823b8ba9b059f0f56692ecc6739b4046be",
+    "externalProposerTransfer": "0x908d983a33bbfaec8420254319bf2338e31d9a11b975e0719b5181ae4788c106",
+    "externalSponsorTransfer": "0x521effc333d14d8100f4bdc5eea9616e857fdd35514f46403f8d36dcb429d102"
   },
   "finalState": {
     "phase": "ALLOCATED",
@@ -20,7 +22,8 @@
     "attemptCount": 1,
     "remainingLiabilityGen": "0 GEN",
     "sponsorCreditGen": "0 GEN",
-    "proposerCreditWithdrawn": true
+    "proposerCreditWithdrawn": true,
+    "contractBalanceGen": "0 GEN"
   },
   "matrix": [
     {"mandateId": "M1", "coverage": "NONE"},

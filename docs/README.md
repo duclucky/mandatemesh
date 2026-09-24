@@ -7,7 +7,7 @@
 - Category: Projects
 - Status: VERIFIED — NO BLOCKER
 - Repository: https://github.com/duclucky/mandatemesh
-- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249`
+- Target network: Studio Dev / Studio Next RPC, chain 61997; active contract `0x6bF7a01031d3371aB23Adb76e3c907F968C7458A`
 
 ## Product hook, trust problem and fingerprint
 
@@ -136,7 +136,7 @@ Views: `get_round`, `get_proposal`, `get_credit`, `get_liability`, `get_public_m
 | Claim | Method/state | View | Direct test | Network evidence |
 | --- | --- | --- | --- | --- |
 | no private allocation | validated matrix → ALLOCATED | matrix/credit | malformed/favorite-output reject | active deployment; direct proof |
-| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | active v0.4.5 lifecycle `review-v045-single-20260924` |
+| exactly 2 GEN enters | `create_round` | liability | wrong/2 GEN | active v0.4.6 lifecycle `review-v046-single-20260924` |
 | one timely plan | `submit_plan` / OPEN | proposal | role/duplicate/boundaries | direct proof |
 | only final credit withdraws | `withdraw_credit` / ALLOCATED | credit/liability | early/caller/duplicate | direct proof |
 | safe unresolved recovery | `recover_expired` | round/liability | caller/state/time/accounting | direct proof |
@@ -147,4 +147,4 @@ Differentiation: unlike TenderSeal (tender/bids), SkillSlot (credentials/access)
 
 Studio Dev only. Deployment binds source commit, runner/API family, address, receipt, canonical views and balance evidence; scripts must be resumable. Browser proof must show wallet choice, official chain setup, submitted/accepted/finalized/failure/retry and canonical CORS-safe reload. Scripts are not browser proof.
 
-Projects completion is recorded as **NO BLOCKER**: the contract is linted and directly tested; active v0.4.5 Studio Dev round `review-v045-single-20260924` completed a real 2 GEN create → submit → freeze → accepted adjudication → proposer withdrawal → sponsor withdrawal lifecycle with zero remaining liability; the canonical mandate configuration is valid; the browser route and RPC path were checked in Chrome; GitHub is public; and Vercel production is live at `https://mandatemesh.vercel.app`. Portal submission is intentionally not claimed; final submission remains a human action.
+Projects completion is recorded as **NO BLOCKER**: the contract is linted and directly tested; active v0.4.6 Studio Dev round `review-v046-single-20260924` completed a real 2 GEN create → submit → freeze → accepted adjudication → finalized proposer withdrawal → finalized sponsor withdrawal lifecycle with zero remaining liability and a verified 0 GEN contract balance; the canonical mandate configuration is valid; the browser route and RPC path were checked in Chrome; GitHub is public; and Vercel production is live at `https://mandatemesh.vercel.app`. Portal submission is intentionally not claimed; final submission remains a human action.

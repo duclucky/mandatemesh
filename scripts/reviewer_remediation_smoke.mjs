@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { createAccount, createClient, isSuccessful } from "genlayer-js";
 import { studioDevnet } from "genlayer-js/chains";
 
-const contractAddress = "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249";
-const roundId = "review-v045-single-20260924";
+const contractAddress = "0x6bF7a01031d3371aB23Adb76e3c907F968C7458A";
+const roundId = "review-v046-single-20260924";
 const clockReferenceHash = "0x7a63b1c9960c964d4d2f2099d059182a794027ddc528a721f2a8762f7f8eae6f";
 const expectedConfigDigest = "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633";
 const GEN = 1_000_000_000_000_000_000n;
@@ -35,7 +35,7 @@ async function readJson(functionName, args) {
   }
 }
 
-async function write(client, functionName, args, value = 0n) {
+async function write(client, functionName, args, value = 0n, waitUntil = "decided") {
   try {
     // Studio Next can reject simulation for time-gated writes even when the
     // authoritative transaction timestamp is already legal. Use the generic
@@ -45,7 +45,7 @@ async function write(client, functionName, args, value = 0n) {
       : await client.estimateTransactionFeesForWrite({ address: contractAddress, functionName, args, value });
     const hash = await client.writeContract({ address: contractAddress, functionName, args, value,
       fees: { distribution: quote.distribution, feeValue: quote.feeValue } });
-    const receipt = await client.waitForTransactionReceipt({ hash, waitUntil: "decided", retries: 120, interval: 5000 });
+    const receipt = await client.waitForTransactionReceipt({ hash, waitUntil, retries: 120, interval: 5000 });
     const summary = { action: functionName, hash, status: receipt.statusName,
       execution: receipt.txExecutionResultName, successful: isSuccessful(receipt) };
     console.log(JSON.stringify(summary));
@@ -123,21 +123,23 @@ if (round.phase !== "ALLOCATED") throw new Error(`expected ALLOCATED, received $
 for (let index = 0; index < accounts.length; index += 1) {
   const credit = await readJson("get_credit", [roundId, accounts[index].address]);
   if (BigInt(credit.amount) > 0n && !credit.withdrawn) {
-    await write(clients[index], "withdraw_credit", [roundId]);
+    await write(clients[index], "withdraw_credit", [roundId], 0n, "finalized");
   }
 }
 round = await readJson("get_round", [roundId]);
 if (BigInt(round.sponsor_credit) > 0n) {
-  await write(clients[0], "withdraw_sponsor_credit", [roundId]);
+  await write(clients[0], "withdraw_sponsor_credit", [roundId], 0n, "finalized");
 }
 
 round = await readJson("get_round", [roundId]);
 const matrix = await readJson("get_public_matrix", [roundId]);
 const credits = await Promise.all(accounts.map((account) => readJson("get_credit", [roundId, account.address])));
+const contractBalance = await readClient.getBalance({ address: contractAddress });
 console.log(JSON.stringify({ roundId, configDigest: round.config_digest, phase: round.phase,
   submittedCount: round.submitted_count, attemptCount: round.attempt_count,
   remainingLiabilityGen: `${Number(round.remaining_liability) / 1e18} GEN`,
   sponsorCreditGen: `${Number(round.sponsor_credit) / 1e18} GEN`, matrix,
+  contractBalanceGen: `${Number(contractBalance) / 1e18} GEN`,
   credits: credits.map((credit) => ({ amountGen: `${Number(credit.amount) / 1e18} GEN`, withdrawn: credit.withdrawn })) }));
 }
 

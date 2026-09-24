@@ -3,8 +3,8 @@ import { createAccount, createClient, isSuccessful } from "genlayer-js";
 import { studioDevnet } from "genlayer-js/chains";
 
 const root = new URL("../../.env", import.meta.url);
-const contractAddress = "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249";
-const roundId = "smoke-v045-78bdb37d";
+const contractAddress = "0x6bF7a01031d3371aB23Adb76e3c907F968C7458A";
+const roundId = "smoke-v046-6bf7a010";
 const GEN = 1_000_000_000_000_000_000n;
 const chain = { ...studioDevnet, name: "GenLayer Studio Dev", rpcUrls: { default: { http: ["https://studio-next.genlayer.com/api"] } } };
 

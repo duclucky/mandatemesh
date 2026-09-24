@@ -2,7 +2,7 @@
   "network": "Studio Dev",
   "rpc": "https://studio-next.genlayer.com/api",
   "chainId": 61997,
-  "contractAddress": "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249",
+  "contractAddress": "0x6bF7a01031d3371aB23Adb76e3c907F968C7458A",
   "method": "get_mandate_config",
   "valid": true,
   "configDigest": "09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633",

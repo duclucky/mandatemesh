@@ -41,6 +41,19 @@
       "reason": "consensus agreed but execution rejected non-canonical JSON wrapper before mutation",
       "adjudicationTransaction": "0xf5470039ef28bb2f8c144a4d6ae35fad46cb615c2f39907b4829f84601361a75",
       "remainingLiabilityGen": "2 GEN"
+    },
+    {
+      "contractAddress": "0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249",
+      "contractVersion": "0.4.5",
+      "roundId": "review-v045-single-20260924",
+      "status": "ABANDONED",
+      "reason": "internal IC-message withdrawal API cleared the ledger but did not debit the Studio EOA-facing contract balance; replaced with the documented EVM external-transfer interface",
+      "withdrawalTransactions": [
+        "0x2c3cddcb4711eafea2b7ad826a2c725a2f00dbb98bba8ea7581144bdaed98735",
+        "0x40bd338cb8e14af341ca63f851ef201f6d7d4b8c3441c756315715811598f1d9"
+      ],
+      "canonicalRemainingLiabilityGen": "0 GEN",
+      "strandedContractBalanceGen": "2 GEN"
     }
   ]
 }

@@ -11,12 +11,12 @@ https://mandatemesh.vercel.app
 ## Deployed contract
 
 - Network: Studio Dev / Studio Next, chain 61997
-- Contract: [`0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249`](https://explorer-studio-dev.genlayer.com/address/0x78BdB37D788905801aa1b6e4CC2f4C2B2d19B249)
+- Contract: [`0x6bF7a01031d3371aB23Adb76e3c907F968C7458A`](https://explorer-studio-dev.genlayer.com/address/0x6bF7a01031d3371aB23Adb76e3c907F968C7458A)
 - Bound mandate configuration digest: `09c4c9ad79f9f9432b36d0a4b21eb7138ee745abb46543badac92cce1e470633`
 
 ## Verified lifecycle
 
-Studio Dev round `review-v045-single-20260924` locked 2 GEN, classified the submitted plan as `NONE / SUBSTANTIVE / NONE`, created deterministic credits, completed both withdrawals, and ended with zero remaining liability. See [`docs/evidence/studio-dev/reviewer-remediation-lifecycle.json`](docs/evidence/studio-dev/reviewer-remediation-lifecycle.json).
+Studio Dev round `review-v046-single-20260924` locked 2 GEN, classified the submitted plan as `NONE / SUBSTANTIVE / NONE`, created deterministic credits, finalized both external EOA withdrawals, and ended with zero remaining liability and a verified 0 GEN contract balance. See [`docs/evidence/studio-dev/reviewer-remediation-lifecycle.json`](docs/evidence/studio-dev/reviewer-remediation-lifecycle.json).
 
 ## Local verification
 
