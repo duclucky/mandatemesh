@@ -196,7 +196,7 @@ def test_validator_prompt_binds_exact_config_and_all_criteria(direct_deploy):
     assert EXPECTED_CONFIG_DIGEST in prompt
     assert all(text in prompt for text in EXPECTED_MANDATE_TEXTS)
     assert all(config["criteria"][label] in prompt for label in ("SUBSTANTIVE", "PARTIAL", "NONE"))
-    assert "SUBSTANTIVE" in prompt and '"valid"' in prompt
+    assert "SUBSTANTIVE" in prompt and '{"valid": true}' in prompt
 
 
 @pytest.mark.parametrize("config_digest", [None, "0" * 64])
